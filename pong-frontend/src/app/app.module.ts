@@ -5,10 +5,12 @@ import { reducer } from './game-state/game.reducer';
 import { AppComponent } from './app.component';
 import { StoreModule } from '@ngrx/store';
 import { EffectsModule } from '@ngrx/effects';
+import { GameComponent } from './game/game.component';
 
 @NgModule({
   declarations: [
-    AppComponent
+    AppComponent,
+    GameComponent,
   ],
   imports: [
     BrowserModule,

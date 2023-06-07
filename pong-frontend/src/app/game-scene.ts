@@ -166,7 +166,7 @@ export class GameScene extends Phaser.Scene {
   private paddle2!: Phaser.Physics.Arcade.Image;
   private ball!: Phaser.Physics.Arcade.Image;
   private cursors!: Phaser.Types.Input.Keyboard.CursorKeys;
-  private paddleSpeed: number = 750; // Adjust the paddle speed as needed
+  private paddleSpeed: number = 950; // Adjust the paddle speed as needed
   private player1Score = 0;
   private player2Score = 0;
   private scoreText1!: Phaser.GameObjects.Text;
@@ -222,98 +222,199 @@ export class GameScene extends Phaser.Scene {
 
     this.cursors = this.input?.keyboard?.createCursorKeys()!;
 
-    let randomVelocityX;
-    let randomVelocityY;
-    if (this.getRandomNumber(0, 1)) {
-      randomVelocityX = this.getRandomNumber(500, 1000);
-      randomVelocityY = this.getRandomNumber(500, 1000);
-    } else {
-      randomVelocityX = this.getRandomNumber(-500, -1000);
-      randomVelocityY = this.getRandomNumber(-500, -1000);
-    }
-    this.ball.setVelocity(randomVelocityX, randomVelocityY);
-    this.physics.add.collider(this.wallDown, this.paddle1, undefined, undefined, this);
-    this.physics.add.collider(this.wallDown, this.paddle2, undefined, undefined, this);
-    this.physics.add.collider(this.wallUp, this.paddle1, undefined, undefined, this);
-    this.physics.add.collider(this.wallUp, this.paddle2, undefined, undefined, this);
-    this.physics.add.collider(this.ball, this.paddle1, undefined, undefined, this);
-    this.physics.add.collider(this.ball, this.paddle2, undefined, undefined, this);
-    this.physics.add.collider(this.ball, this.wallUp, undefined, undefined, this);
-    this.physics.add.collider(this.ball, this.wallDown, undefined, undefined, this);
-    this.scoreText1 = this.add.text(16, 16, 'Player 1: 0', { fontSize: '32px', fill: '#fff' } as Phaser.Types.GameObjects.Text.TextStyle);
-    this.scoreText2 = this.add.text(this.gameWidth - 16, 16, 'Player 2: 0', { fontSize: '32px', fill: '#fff' } as Phaser.Types.GameObjects.Text.TextStyle).setOrigin(1, 0);
+
+    const speed = 650;
+
+    const directionX = Math.random() * 2 - 1; // Range: -1 to 1
+    const directionY = Math.random() * 2 - 1; // Range: -1 to 1
+
+    const length = Math.sqrt(directionX ** 2 + directionY ** 2);
+    const normalizedDirectionX = directionX / length;
+    const normalizedDirectionY = directionY / length;
+
+    const velocityX = normalizedDirectionX * speed;
+    const velocityY = normalizedDirectionY * speed;
+
+    this.ball.setVelocity(velocityX, velocityY);
+
+    this.ball.setVelocity(velocityX, velocityY);
+
+    this.physics.add.collider(this.ball, [this.paddle1, this.paddle2], this.handleBallPaddleCollision as any, undefined, this);
+    this.physics.add.collider(this.ball, [this.wallUp, this.wallDown], undefined, undefined, this);
+    this.scoreText1 = this.add.text(475, 50, 'Player 1: 0', { fontSize: '128px', fill: '#fff' } as Phaser.Types.GameObjects.Text.TextStyle);
+    this.scoreText2 = this.add.text(this.gameWidth - 475, 50, 'Player 2: 0', { fontSize: '128px', fill: '#fff' } as Phaser.Types.GameObjects.Text.TextStyle).setOrigin(1, 0);
+    this.scoreText1.setText(`0`);
+    this.scoreText2.setText(`0`);
   }
 
-  // handleBallPaddleCollision(ball: Phaser.Physics.Arcade.Image, paddle: Phaser.Physics.Arcade.Image) {
-  //   // console.log(paddle)
-  //   // if (ball.body?.velocity.x && ball.body?.velocity.x <= 0.1) {
-  //   //   console.log("fixed X");
-  //   //   ball.setVelocity(this.getRandomNumber(500, 1000));
-  //   // } else if (ball.body?.velocity.y && ball.body?.velocity.y <= 0.1) {
-  //   //   console.log("fixed Y");
-  //   //   ball.setVelocity(this.getRandomNumber(500, 1000));
-  //   // }
-  //   // if (paddle == this.wallLeft) {
-  //   //   // const randomVelocityX = this.getRandomNumber(500, 1000);
-  //   //   // const randomVelocityY = this.getRandomNumber(500, 1000);
-  //   //   this.player2Score += 1;
-  //   //   this.scoreText2.setText(`Player 1: ${this.player2Score}`);
-  //   //   // this.ball.setVelocity(randomVelocityX, randomVelocityY);
-  //   //   this.ball.setPosition(this.gameWidth / 2, this.gameHeight / 2);
-  //   // }
-  //   // else if (paddle == this.wallRight) {
-  //   //   // const randomVelocityX = this.getRandomNumber(500, 1000);
-  //   //   // const randomVelocityY = this.getRandomNumber(500, 1000);
-  //   //   this.player1Score += 1;
-  //   //   this.scoreText1.setText(`Player 1: ${this.player1Score}`);
-  //   //   // this.ball.setVelocity(randomVelocityX, randomVelocityY);
-  //   //   this.ball.setPosition(this.gameWidth / 2, this.gameHeight / 2);
-  //   // }
-  // }
+  handleBallPaddleCollision(ball: Phaser.Physics.Arcade.Image, paddle: Phaser.Physics.Arcade.Image) {
+    if (this.ball.body) {
+      const speed = Math.sqrt(this.ball.body?.velocity.x ** 2 + this.ball.body?.velocity.y ** 2);
+      if (speed < 1500)
+        this.ball.setVelocity(this.ball.body?.velocity.x * 1.1, this.ball.body?.velocity.y * 1.1);
+    }
+  }
+  handleWallPaddleCollision(wall: Phaser.Physics.Arcade.Image, paddle: Phaser.Physics.Arcade.Image) {
+    // console.log("hit wall");
+    // if (paddle == this.paddle1) {
+    //   if (paddle.y < 100 || paddle.y > this.gameHeight - 200) {
+    //     this.paddle1.setVelocity(0, 0);
+    //   }
+    // }
+  }
+
 
   override update(time: number, delta: number) {
     // Update game state in the game loop here
     // console.log('update method');
 
     // Handle paddle movement
-    if (this.ball.x < -150) {
+    if (this.ball.x < -125) {
       // console.log("yes");
-      this.ball.setPosition(this.gameWidth / 2, this.getRandomNumber(50, this.gameHeight - 50));
-      let randomVelocityX;
-      let randomVelocityY;
-      if (this.getRandomNumber(0, 1)) {
-        randomVelocityX = this.getRandomNumber(500, 1000);
-        randomVelocityY = this.getRandomNumber(500, 1000);
-      } else {
-        randomVelocityX = this.getRandomNumber(-500, -1000);
-        randomVelocityY = this.getRandomNumber(-500, -1000);
-      }
       this.player2Score += 1;
-      this.scoreText2.setText(`Player 2: ${this.player2Score}`);
-      this.ball.setVelocity(randomVelocityX, randomVelocityY);
+      this.scoreText2.setText(`${this.player2Score}`);
+      this.ball.setPosition(this.gameWidth / 2, this.getRandomNumber(50, this.gameHeight - 50));
+      const speed = 650;
+
+      const directionX = Math.random() * 2 - 1; // Range: -1 to 1
+      const directionY = Math.random() * 2 - 1; // Range: -1 to 1
+
+      const length = Math.sqrt(directionX ** 2 + directionY ** 2);
+      const normalizedDirectionX = directionX / length;
+      const normalizedDirectionY = directionY / length;
+
+      const velocityX = normalizedDirectionX * speed;
+      const velocityY = normalizedDirectionY * speed;
+
+      this.ball.setVelocity(velocityX, velocityY);
     }
-    if (this.ball.x > this.gameWidth + 150) {
+    if (this.ball.x > this.gameWidth + 125) {
       // console.log("yes");
+      this.player1Score += 1;
+      this.scoreText1.setText(`${this.player1Score}`);
       this.ball.setPosition(this.gameWidth / 2, this.getRandomNumber(50, this.gameHeight - 50));
       let randomVelocityX;
       let randomVelocityY;
+      const currentVelocityMagnitude = Math.sqrt((this.ball?.body?.velocity.x ?? 0) ** 2 + (this.ball?.body?.velocity.y ?? 0) ** 2);
       if (this.getRandomNumber(0, 1)) {
         randomVelocityX = this.getRandomNumber(500, 1000);
-        randomVelocityY = this.getRandomNumber(500, 1000);
+        randomVelocityY = Math.abs(1000 - randomVelocityX);
       } else {
         randomVelocityX = this.getRandomNumber(-500, -1000);
-        randomVelocityY = this.getRandomNumber(-500, -1000);
+        randomVelocityY = -Math.abs(1000 - randomVelocityX);
       }
-      this.player1Score += 1;
-      this.scoreText1.setText(`Player 1: ${this.player1Score}`);
+      const newVelocityMagnitude = Math.sqrt(randomVelocityX ** 2 + randomVelocityY ** 2);
+      const scaleFactor = currentVelocityMagnitude / newVelocityMagnitude;
+      randomVelocityX *= scaleFactor;
+      randomVelocityY *= scaleFactor;
       this.ball.setVelocity(randomVelocityX, randomVelocityY);
     }
-    if (this.cursors.up.isDown) {
-      this.paddle1.setVelocityY(-this.paddleSpeed);
-    } else if (this.cursors.down.isDown) {
-      this.paddle1.setVelocityY(this.paddleSpeed);
+
+
+    const overlap = this.physics.overlap([this.paddle1, this.paddle2], [this.wallUp, this.wallDown]);
+    if (overlap == false) {
+      if (this.cursors.up.isDown) {
+        this.paddle1.setVelocityY(-this.paddleSpeed);
+      } else if (this.cursors.down.isDown) {
+        this.paddle1.setVelocityY(this.paddleSpeed);
+      } else {
+        this.paddle1.setVelocityY(0);
+      }
     } else {
-      this.paddle1.setVelocityY(0);
+      if (this.paddle1.y < this.gameHeight / 2)
+        this.paddle1.setVelocityY(30);
+      else
+        this.paddle1.setVelocityY(-30);
     }
+
+    {
+      // Assuming paddle2 is positioned vertically
+      const ballVelocityX = this.ball?.body?.velocity?.x ?? 0;
+      // const ballVelocityY = this.ball?.body?.velocity?.y ?? 0;
+      console.log({ ballVelocityX })
+
+      // Check if the ball is moving towards paddle 2
+      if ((ballVelocityX > 0)) {
+        // Calculate the time it takes for the ball to reach the same Y position as paddle2
+        const time = (this.paddle2.x - this.ball.x) / ballVelocityX;
+        const predictedY = this.ball.y + (this.ball.body?.velocity.y ?? 0) * time
+        if (predictedY < 50 || predictedY > this.gameHeight - 50)
+          return;
+
+        if (this.paddle2.y - predictedY < 15 && this.paddle2.y - predictedY > -15) {
+          this.paddle2.setVelocityY(0);
+        } else if (this.paddle2.y < predictedY) {
+          this.paddle2.setVelocityY(this.paddleSpeed);
+        } else if (this.paddle2.y > predictedY) {
+          this.paddle2.setVelocityY(-this.paddleSpeed);
+        } else {
+          this.paddle2.setVelocityY(0);
+        }
+        // Predict the future position of the ball after 'time' milliseconds
+        // const predictedPosition = this.ball.x + ballVelocityX * time;
+        // // if (predictedPosition < 50 || predictedPosition > this.gameHeight - 50)
+        // //   return;
+        // // console.log({ predictedPosition })
+
+
+        // // Calculate the displacement and velocity needed for paddle 2 to reach the predicted position
+        // const displacement = predictedPosition - this.paddle2.x;
+        // if (displacement < 0)
+        //   this.paddle2.setVelocityY(-this.paddleSpeed);
+        // else
+        //   this.paddle2.setVelocityY(+this.paddleSpeed);
+
+        // Set the velocity of paddle 2 to move towards the predicted position
+      } else {
+        // If the ball is not moving towards paddle 2, set its velocity to 0 to stop its movement
+
+        this.paddle2.setVelocityY(0);
+      }
+    }
+    // {
+    //   // Assuming paddle2 is positioned vertically
+    //   const ballVelocityX = this.ball?.body?.velocity?.x ?? 0;
+    //   const ballVelocityY = this.ball?.body?.velocity?.y ?? 0;
+    //   console.log({ ballVelocityX })
+
+    //   // Check if the ball is moving towards paddle 2
+    //   if ((ballVelocityX < 0)) {
+    //     // Calculate the time it takes for the ball to reach the same Y position as paddle2
+    //     const time = (this.paddle1.x - this.ball.x) / ballVelocityX;
+    //     const predictedY = this.ball.y + (this.ball.body?.velocity.y ?? 0) * time
+    //     if (predictedY < 50 || predictedY > this.gameHeight - 50)
+    //       return;
+
+    //     if (this.paddle1.y - predictedY < 15 && this.paddle1.y - predictedY > -15) {
+    //       this.paddle1.setVelocityY(0);
+    //     } else if (this.paddle1.y < predictedY) {
+    //       this.paddle1.setVelocityY(this.paddleSpeed);
+    //     } else if (this.paddle1.y > predictedY) {
+    //       this.paddle1.setVelocityY(-this.paddleSpeed);
+    //     } else {
+    //       this.paddle1.setVelocityY(0);
+    //     }
+    //     // Predict the future position of the ball after 'time' milliseconds
+    //     // const predictedPosition = this.ball.x + ballVelocityX * time;
+    //     // // if (predictedPosition < 50 || predictedPosition > this.gameHeight - 50)
+    //     // //   return;
+    //     // // console.log({ predictedPosition })
+
+
+    //     // // Calculate the displacement and velocity needed for paddle 2 to reach the predicted position
+    //     // const displacement = predictedPosition - this.paddle2.x;
+    //     // if (displacement < 0)
+    //     //   this.paddle2.setVelocityY(-this.paddleSpeed);
+    //     // else
+    //     //   this.paddle2.setVelocityY(+this.paddleSpeed);
+
+    //     // Set the velocity of paddle 2 to move towards the predicted position
+    //   } else {
+    //     // If the ball is not moving towards paddle 2, set its velocity to 0 to stop its movement
+
+    //     this.paddle1.setVelocityY(0);
+    //   }
+    // }
+
   }
 }

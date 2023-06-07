@@ -13,8 +13,8 @@ export class GameComponent implements OnInit {
   constructor() {
     this.config = {
       type: Phaser.AUTO,
-      width: 800,
-      height: 600,
+      width: 1300,
+      height: 900,
       parent: 'game-container', // Parent element ID
       scene: [GameScene] // Register your scene(s) here
     };

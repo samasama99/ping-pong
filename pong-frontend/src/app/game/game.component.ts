@@ -1,5 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { GameScene } from '../game-scene';
+import Phaser from 'phaser';
+import 'phaser3-nineslice';
 
 @Component({
   selector: 'app-game',
@@ -14,8 +16,14 @@ export class GameComponent implements OnInit {
     this.config = {
       type: Phaser.AUTO,
       width: 1300,
-      height: 900,
+      height: 960,
       parent: 'game-container', // Parent element ID
+      physics: {
+        default: 'arcade',
+        arcade: {
+          // Arcade Physics configuration options...
+        }
+      },
       scene: [GameScene] // Register your scene(s) here
     };
 

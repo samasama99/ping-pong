@@ -27,7 +27,10 @@
             "styles": [
               "src/styles.css"
             ],
-            "scripts": []
+            "scripts": [
+              "node_modules/phaser/dist/phaser.js",
+              "node_modules/phaser3-nineslice/dist/nineslice.min.js"
+            ]
           },
           "configurations": {
             "production": {

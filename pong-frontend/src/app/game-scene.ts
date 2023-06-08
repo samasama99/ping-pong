@@ -1,5 +1,8 @@
 import Phaser from 'phaser';
 import 'phaser3-nineslice';
+import { Store, select } from '@ngrx/store';
+import { CreateGame, IncrementPlayerScore1, IncrementPlayerScore2, MovePlayer1, MovePlayer2, UpdateBall } from './game-state/game.actions'
+import { Observable } from 'rxjs';
 
 export class GameScene extends Phaser.Scene {
 
@@ -22,6 +25,10 @@ export class GameScene extends Phaser.Scene {
 
   constructor() {
     super({ key: 'game' });
+  }
+
+  init() {
+    console.log("init")
   }
 
   preload() {
@@ -140,6 +147,7 @@ export class GameScene extends Phaser.Scene {
   }
 
   override update() {
+    // console.log("update", this.ball.x, this.ball.y)
     if (this.cursors.up.isDown) {
       this.paddle1.setVelocityY(-this.paddleSpeed);
     } else if (this.cursors.down.isDown) {
@@ -155,45 +163,42 @@ export class GameScene extends Phaser.Scene {
         const time = (this.paddle2.x - this.ball.x + -50) / ballVelocityX;
         const predictedY = this.ball.y + (this.ball.body?.velocity.y ?? 0) * time
 
-        if (predictedY < 60 || predictedY > this.gameHeight - 60)
-          return;
+        if (!(predictedY < 60 || predictedY > this.gameHeight - 60)) {
 
-        if (this.paddle2.y - predictedY < 15 && this.paddle2.y - predictedY > -15) {
-          this.paddle2.setVelocityY(0);
-        } else if (this.paddle2.y < predictedY) {
-          this.paddle2.setVelocityY(this.paddleSpeed);
-        } else if (this.paddle2.y > predictedY) {
-          this.paddle2.setVelocityY(-this.paddleSpeed);
-        } else {
-          this.paddle2.setVelocityY(0);
+          if (this.paddle2.y - predictedY < 15 && this.paddle2.y - predictedY > -15) {
+            this.paddle2.setVelocityY(0);
+          } else if (this.paddle2.y < predictedY) {
+            this.paddle2.setVelocityY(this.paddleSpeed);
+          } else if (this.paddle2.y > predictedY) {
+            this.paddle2.setVelocityY(-this.paddleSpeed);
+          } else {
+            this.paddle2.setVelocityY(0);
+          }
         }
+
       } else {
         this.paddle2.setVelocityY(0);
       }
     }
 
-    // Inside the update function, check if the delay timer is active and complete
-    if (this.respawnDelayTimer && this.respawnDelayTimer.getProgress() === 1) {
-      // The delay timer has completed, clear the timer reference
-      this.respawnDelayTimer = undefined;
-    } else if (this.respawnDelayTimer) {
-      return;
-    }
     if (this.player1Score === 3) {
-      // Pause the game scene
       this.scene.pause();
       this.winTextPlayer1.setText(`WIN`);
-      // Add any additional logic or display a message here
       console.log("Game paused!");
       return;
     }
     if (this.player2Score === 3) {
-      // Pause the game scene
       this.scene.pause();
       this.winTextPlayer2.setText(`WIN`);
-      // Add any additional logic or display a message here
-
       console.log("Game paused!");
+      return;
+    }
+
+    // console.log({ respawnDelayTimer: this.respawnDelayTimer?.getProgress() })
+    if (this.respawnDelayTimer && this.respawnDelayTimer.getProgress() === 1) {
+      this.respawnDelayTimer = undefined;
+    } else if (this.respawnDelayTimer) {
+      // console.log("skip")
       return;
     }
     if (this.ball.x < 0) {
@@ -202,46 +207,27 @@ export class GameScene extends Phaser.Scene {
         callback: this.handleBallRespawn,
         callbackScope: this
       });
-
-      // this.resetBall()
-    }
-    if (this.ball.x > this.gameWidth) {
+    } else if (this.ball.x > this.gameWidth) {
       this.respawnDelayTimer = this.time.addEvent({
-        delay: 2000, // Adjust the delay time (in milliseconds) as needed
+        delay: 150, // Adjust the delay time (in milliseconds) as needed
         callback: this.handleBallRespawn,
         callbackScope: this
       });
-
-      // this.resetBall()
     }
 
   }
   private handleBallRespawn() {
-    // Resume the game and reset the ball position
+    // console.log(this.ball.x)
     if (this.ball.x < 0) {
       this.player2Score += 1;
       this.scoreText2.setText(`${this.player2Score}`);
-    }
-
-    if (this.ball.x > this.gameWidth) {
+    } else if (this.ball.x > this.gameWidth) {
       this.player1Score += 1;
       this.scoreText1.setText(`${this.player1Score}`);
     }
 
-    this.physics.resume();
+    // this.physics.resume();
     this.resetBall()
-    // this.ball.setPosition(this.gameWidth / 2, this.getRandomNumber(50, this.gameHeight - 50));
-
-    // Generate a new random direction for the ball
-    // const speed = 650;
-    // const directionX = Math.random() * 1 - 1;
-    // const directionY = Math.random() * 1 - 1;
-    // const length = Math.sqrt(directionX ** 2 + directionY ** 2);
-    // const normalizedDirectionX = directionX / length;
-    // const normalizedDirectionY = directionY / length;
-    // const velocityX = normalizedDirectionX * speed;
-    // const velocityY = normalizedDirectionY * speed;
-    // this.ball.setVelocity(velocityX, velocityY)
   }
 
 }

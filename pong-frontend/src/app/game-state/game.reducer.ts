@@ -1,23 +1,6 @@
 import { Action, createReducer, on } from '@ngrx/store';
-import { GameState } from './game.state';
+import { GameState, initialState } from './game.state';
 import { CreateGame, IncrementPlayerScore1, IncrementPlayerScore2, MovePlayer1, MovePlayer2, UpdateBall } from './game.actions';
-
-
-const initialState: GameState = {
-  player1: {
-    position: { x: 0, y: 0 },
-    score: 0,
-  },
-  player2: {
-    position: { x: 0, y: 0 },
-    score: 0,
-  },
-  ball: {
-    position: { x: 0, y: 0 },
-    velocity: { x: 0, y: 0 },
-    speed: 0,
-  },
-};
 
 export const gameReducer = createReducer(
   initialState,

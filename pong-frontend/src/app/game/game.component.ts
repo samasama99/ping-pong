@@ -1,7 +1,9 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { GameScene } from '../game-scene';
 import Phaser from 'phaser';
 import 'phaser3-nineslice';
+import { Store } from '@ngrx/store';
+import { GameState } from '../game-state/game.state';
 
 @Component({
   selector: 'app-game',
@@ -11,6 +13,7 @@ import 'phaser3-nineslice';
 export class GameComponent implements OnInit {
   private game!: Phaser.Game;
   private config: Phaser.Types.Core.GameConfig;
+  private store: Store<GameState> = inject(Store);
 
   constructor() {
     this.config = {
@@ -31,5 +34,7 @@ export class GameComponent implements OnInit {
 
   ngOnInit() {
     this.game = new Phaser.Game(this.config);
+    let gameScene = new GameScene(this.store);
+    this.game.scene.add('main', gameScene);
   }
 }

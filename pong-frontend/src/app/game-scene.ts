@@ -3,6 +3,9 @@ import 'phaser3-nineslice';
 import { Store, select } from '@ngrx/store';
 import { CreateGame, IncrementPlayerScore1, IncrementPlayerScore2, MovePlayer1, MovePlayer2, UpdateBall } from './game-state/game.actions'
 import { Observable } from 'rxjs';
+import { GameState } from './game-state/game.state';
+import { inject } from '@angular/core';
+
 
 export class GameScene extends Phaser.Scene {
 
@@ -22,13 +25,16 @@ export class GameScene extends Phaser.Scene {
   private gameHeight = 0;
   private gameWidth = 0;
   private respawnDelayTimer: Phaser.Time.TimerEvent | undefined;
+  private store: Store<GameState>;
 
-  constructor() {
+  constructor(store: Store<GameState>) {
     super({ key: 'game' });
+    this.store = store;
   }
 
   init() {
     console.log("init")
+    this.store.dispatch(CreateGame());
   }
 
   preload() {
@@ -90,8 +96,16 @@ export class GameScene extends Phaser.Scene {
     const velocityX = normalizedDirectionX * speed;
     const velocityY = normalizedDirectionY * speed;
 
+    const ball_x = this.gameWidth / 2;
+    const ball_y = this.getRandomNumber(100, this.gameHeight - 100);
+
     this.ball.setVelocity(velocityX, velocityY);
     this.ball.setPosition(this.gameWidth / 2, this.getRandomNumber(100, this.gameHeight - 100));
+    this.store.dispatch(UpdateBall({
+      new_pos: { x: ball_x, y: ball_y },
+      new_velocity: { x: velocityX, y: velocityY },
+      new_speed: speed
+    }))
   }
 
   initText() {
@@ -126,9 +140,9 @@ export class GameScene extends Phaser.Scene {
       // console.log(impactAngle, newAngle)
 
       // Calculate the new velocity based on the angle
-      const speed = Math.sqrt(this.ball.body?.velocity.x ** 2 + this.ball.body?.velocity.y ** 2);
+      const speed = Math.sqrt(this.ball.body.velocity.x ** 2 + this.ball.body.velocity.y ** 2);
       if (speed < 1500)
-        this.ball.setVelocity(this.ball.body?.velocity.x * 1.1, this.ball.body?.velocity.y * 1.1);
+        this.ball.setVelocity(this.ball.body.velocity.x * 1.1, this.ball.body.velocity.y * 1.1);
       // if (impactAngle < this.degrees_to_radians(15)) {
       //   console.log("new angle apply")
       //   const newVelocityX = Math.cos(newAngle) * speed;
@@ -137,6 +151,11 @@ export class GameScene extends Phaser.Scene {
       //   // Set the new velocity for the ball
       //   this.ball.setVelocity(newVelocityX, newVelocityY);
       // }
+      this.store.dispatch(UpdateBall({
+        new_pos: { x: this.ball.x, y: this.ball.y },
+        new_velocity: { x: this.ball.body.velocity.x, y: this.ball.body.velocity.y },
+        new_speed: speed
+      }))
     }
 
     // if (this.ball.body) {
@@ -219,9 +238,11 @@ export class GameScene extends Phaser.Scene {
   private handleBallRespawn() {
     // console.log(this.ball.x)
     if (this.ball.x < 0) {
+      this.store.dispatch(IncrementPlayerScore2());
       this.player2Score += 1;
       this.scoreText2.setText(`${this.player2Score}`);
     } else if (this.ball.x > this.gameWidth) {
+      this.store.dispatch(IncrementPlayerScore1());
       this.player1Score += 1;
       this.scoreText1.setText(`${this.player1Score}`);
     }

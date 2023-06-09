@@ -1,6 +1,6 @@
 import { Action, createReducer, on } from '@ngrx/store';
 import { GameState, initialState } from './game.state';
-import { CreateGame, IncrementPlayerScore1, IncrementPlayerScore2, MovePlayer1, MovePlayer2, UpdateBall } from './game.actions';
+import { ChangeState, CreateGame, IncrementPlayerScore1, IncrementPlayerScore2, MovePlayer1, MovePlayer2, UpdateBall } from './game.actions';
 
 export type vector = { x: number, y: number };
 
@@ -23,6 +23,10 @@ export const gameReducer = createReducer(
   on(IncrementPlayerScore2, (state) =>
     ({ ...state, player2: { ...state.player2, score: state.player2.score + 1 } })
   ),
+  on(ChangeState, (state, { new_state }) =>
+    ({ ...state, state: new_state })
+  ),
+
 );
 
 export function reducer(state: GameState = initialState, action: Action): GameState {

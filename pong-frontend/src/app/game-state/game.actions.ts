@@ -1,5 +1,6 @@
 import { createAction, props } from '@ngrx/store';
 import { vector } from './game.reducer';
+import { GameStateType } from '../game.service';
 
 export const CreateGame = createAction('[Game] Create Game');
 
@@ -29,7 +30,12 @@ export const IncrementPlayerScore1 = createAction(
 export const IncrementPlayerScore2 = createAction(
   '[Game] Increment Player Score 2',
 )
-
+export const ChangeState = createAction(
+  '[Game] Change State',
+  props<{
+    new_state: GameStateType
+  }>()
+)
 // export const loadTodosSuccess = createAction('[Todo] Load Todos Success', props<{ todos: Todo[] }>());
 // export const addTodo = createAction('[Todo] Add Todo', props<{ todo: Todo }>());
 // export const addTodoSuccess = createAction('[Todo] Add Todo Success', props<{ todo: Todo }>());

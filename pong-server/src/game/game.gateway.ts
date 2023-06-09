@@ -27,47 +27,13 @@ import { json } from 'stream/consumers';
   }
 }
 )
-export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
-  @WebSocketServer()
-  private server: Server;
+export class GameGateway {
+  // @WebSocketServer()
+  // private server: Server;
   private queue: Array<Socket> = [];
-  private games: { player1: Socket, player2: Socket }[] = [];
+  private games: Map<number, { player1: Socket, player2: Socket }> = new Map<number, { player1: Socket, player2: Socket }>();;
 
-  constructor(private readonly gameService: GameService) { }
-
-  handleDisconnect(player: Socket) {
-    console.log("handleDisconnect")
-    // console.log(player.playerId, "quit");
-    // this.queue = this.queue.filter(q => q.playerId !== player.playerId);
-
-    // const gameIndex = this.games.findIndex(
-    //   q => q.player1.playerId === player.playerId || q.player2.playerId === player.playerId
-    // );
-
-    // if (gameIndex !== -1) {
-    //   const { player1, player2 } = this.games[gameIndex];
-
-    //   if (player1.playerId === player.playerId) {
-    //     console.log(player2.playerId, "is pending");
-    //     player2.socket.emit('changeState', 'pending');
-    //   } else {
-    //     console.log(player1.playerId, "is pending");
-    //     player1.socket.emit('changeState', 'pending');
-    //   }
-
-    //   this.games.splice(gameIndex, 1);
-    // }
-
-  }
-
-  handleConnection(client: Socket) {
-    console.log("handleConnection");
-  }
-
-  // @SubscribeMessage('msg')
-  // handleMsg(socket: Socket, msg: string) {
-  //   console.log(socket, msg)
-  // }
+  constructor() { }
 
   @SubscribeMessage('createGame')
   create(socket: Socket) {
@@ -75,47 +41,34 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     if (this.queue.length == 0) {
       this.queue.push(socket)
       socket.emit('changeState', JSON.stringify('in queue'));
-      console.log("first player in")
       return;
     }
-    let player1socket: Socket = this.queue.pop()
-    this.games.push({ player1: player1socket, player2: socket });
-    let player1 = { gameId: Date.now(), state: 'player1' };
-    let player2 = { gameId: player1.gameId, state: 'player2' };
 
+    let player1: Socket = this.queue.pop()
+    let player2: Socket = socket;
+    const gameId = Date.now();
 
-
-    socket.on('disconnect', () => {
-      console.log(player1, player2);
-    });
-    player1socket.on('disconnect', () => {
-      console.log(player1, player2);
-    });
-    socket.on('close', () => {
-      console.log(player1, player2);
-    });
-    socket.on('error', () => {
-      console.log(player1, player2);
-    });
-    player1socket.on('close', () => {
-      console.log(player1, player2);
-    });
-    player1socket.on('error', () => {
-      console.log(player1, player2);
+    player1.on('disconnect', () => {
+      player2.emit('changeState', JSON.stringify('pending'))
     });
 
-    player1socket.emit('changeState', JSON.stringify(player1));
-    socket.emit('changeState', JSON.stringify(player2));
-    console.log("second player in")
+    player1.on('updatePlayerVelocity', (state) => {
+      console.log(state)
+    });
+
+    player1.on('updateBallState', (state) => {
+      console.log(state)
+      player2.emit('updateBallStateEvent', state);
+    });
+
+    player2.on('disconnect', () => {
+      player1.emit('changeState', JSON.stringify('pending'))
+    });
+
+    this.games[gameId] = { player1, player2 };
+
+    player1.emit('changeState', JSON.stringify({ gameId, state: 'player1' }));
+    player2.emit('changeState', JSON.stringify({ gameId, state: 'player2' }));
+    console.log("Starting Game", { gameId });
   }
-
-  // @SubscribeMessage('tabClosed')
-  // handleTabClosed(socket: Socket, state: string): void {
-  //   // Handle the tab closure event
-  //   console.log('Tab closed:', state);
-  //   console.log('Tab closed:', JSON.parse(state));
-  //   // Perform any necessary operations
-  //   // ...
-  // }
-
 }

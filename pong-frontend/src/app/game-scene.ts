@@ -5,6 +5,7 @@ import { CreateGame, IncrementPlayerScore1, IncrementPlayerScore2, MovePlayer1, 
 import { GameState } from './game-state/game.state';
 
 import { Game } from "phaser";
+import { getGameState, selectBall } from './game-state/game.selectors';
 
 
 export class GameScene extends Phaser.Scene {
@@ -76,9 +77,6 @@ export class GameScene extends Phaser.Scene {
 
     this.ball.setBounce(1);
     this.ball.setPushable(false);
-    // this.physics.add.collider(this.wallUp, [this.paddle1, this.paddle2], undefined, undefined, this);
-    // this.physics.add.collider(this.wallDown, [this.paddle1, this.paddle2], undefined, undefined, this);
-
   }
 
   resetBall() {
@@ -109,7 +107,6 @@ export class GameScene extends Phaser.Scene {
         new_speed: this.ball.body.velocity.length()
       }))
     }
-    // this.current_ball_speed = this.inital_ball_speed;
   }
 
   initText() {
@@ -125,8 +122,13 @@ export class GameScene extends Phaser.Scene {
     this.cursors = this.input?.keyboard?.createCursorKeys()!;
     this.setupGameObject();
     this.setupGamePhysics();
-    this.resetBall();
     this.initText();
+
+    this.store.select(getGameState).subscribe(state => {
+      console.log("select state", state);
+      this.game_state = state;
+    })
+
   }
 
   // degrees_to_radians(degrees: number) {
@@ -164,16 +166,19 @@ export class GameScene extends Phaser.Scene {
         // Increase the ball speed
         this.ball.body.velocity.x *= 1.02;
         this.ball.body.velocity.y *= 1.02;
-        this.store.dispatch(UpdateBall({
-          new_pos: { x: this.ball.x, y: this.ball.y },
-          new_velocity: { x: this.ball.body.velocity.x, y: this.ball.body.velocity.y },
-          new_speed: this.ball.body.velocity.length()
-        }));
+        if (this.game_state == 'player1') {
+          this.store.dispatch(UpdateBall({
+            new_pos: { x: this.ball.x, y: this.ball.y },
+            new_velocity: { x: this.ball.body.velocity.x, y: this.ball.body.velocity.y },
+            new_speed: this.ball.body.velocity.length()
+          }));
+        }
       }
     }
   }
+
   handleBallWallCollision(ball: Phaser.Physics.Arcade.Image, paddle: Phaser.Physics.Arcade.Image) {
-    if (this.ball.body) {
+    if (this.ball.body && this.game_state == 'player1') {
       this.store.dispatch(UpdateBall({
         new_pos: { x: this.ball.x, y: this.ball.y },
         new_velocity: { x: this.ball.body.velocity.x, y: this.ball.body.velocity.y },
@@ -206,69 +211,76 @@ export class GameScene extends Phaser.Scene {
   }
 
 
+  private game_state = 'pending';
+  private start = true;
   override update() {
-    if (this.paddle1.body?.velocity) {
-      if (this.cursors.up.isDown) {
-        // console.log("up");
-        if (this.paddle1.body.velocity.y != -this.paddleSpeed) {
-          // console.log("up update");
-          this.paddle1.setVelocityY(-this.paddleSpeed);
-          this.store.dispatch(MovePlayer1({ new_velocityY: this.paddle1.body.velocity.y }))
-        }
-      } else if (this.cursors.down.isDown) {
-        // console.log("down");
-        if (this.paddle1.body.velocity.y != this.paddleSpeed) {
-          // console.log("down update");
-          this.paddle1.setVelocityY(this.paddleSpeed);
-          this.store.dispatch(MovePlayer1({ new_velocityY: this.paddle1.body.velocity.y }))
-        }
-      } else if (this.paddle1.body?.velocity.y != 0) {
-        // console.log("update stil");
-        this.paddle1.setVelocityY(0);
-        this.store.dispatch(MovePlayer1({ new_velocityY: this.paddle1.body.velocity.y }))
-      }
+    if (this.game_state == 'pending') {
+      this.physics.pause();
+      return;
     }
-    { // PLAYER AI
+    else if (this.game_state == 'in queue') {
+      this.resetBall()
+    }
+    else if (this.game_state == 'player1') {
+      this.physics.resume();
 
-      { // PLAYER AI
-        const ballVelocityX = this.ball?.body?.velocity?.x ?? 0;
-
-        if (ballVelocityX > 0) {
-          const time = (this.paddle2.x - this.ball.x + -50) / ballVelocityX;
-          const predictedY = this.ball.y + (this.ball.body?.velocity.y ?? 0) * time;
-
-          if (!(predictedY < 60 || predictedY > this.gameHeight - 60)) {
-            this.movePaddleToPosition(this.paddle2.x, predictedY, this.paddleSpeed);
+      if (this.paddle1.body?.velocity) {
+        if (this.cursors.up.isDown) {
+          // console.log("up");
+          if (this.paddle1.body.velocity.y != -this.paddleSpeed) {
+            // console.log("up update");
+            this.paddle1.setVelocityY(-this.paddleSpeed);
+            this.store.dispatch(MovePlayer1({ new_velocityY: this.paddle1.body.velocity.y }))
           }
-        } else {
-          this.paddle2.setVelocityY(0);
+        } else if (this.cursors.down.isDown) {
+          // console.log("down");
+          if (this.paddle1.body.velocity.y != this.paddleSpeed) {
+            // console.log("down update");
+            this.paddle1.setVelocityY(this.paddleSpeed);
+            this.store.dispatch(MovePlayer1({ new_velocityY: this.paddle1.body.velocity.y }))
+          }
+        } else if (this.paddle1.body?.velocity.y != 0) {
+          // console.log("update stil");
+          this.paddle1.setVelocityY(0);
+          this.store.dispatch(MovePlayer1({ new_velocityY: this.paddle1.body.velocity.y }))
         }
       }
 
-      // if (this.paddle2.body?.velocity)
-      //   this.store.dispatch(MovePlayer2({ new_velocityY: this.paddle2.body?.velocity.y }))
+    } else if (this.game_state == 'player2') {
+      if (this.start) {
+        this.store.select(selectBall).subscribe(state => {
+          console.log("i'm here", state)
+          this.ball.setPosition(state.position);
+          this.ball.setVelocity(state.velocity);
+          console.log("ball 1", this.ball.x, this.ball.y)
+          console.log("ball 2", this.ball.body?.velocity.x, this.ball.body?.velocity.y)
+        })
+        this.start = false;
+      }
+      this.physics.resume();
 
-      // this.store.pipe(select(selectPlayer2Velocity)).subscribe((state: number) => {
-      //   // console.log(state)
-      // });
-      // this.paddle2PosObservable.subscribe(({ x, y }) => {
-      //   console.log("here")
-      //   console.log(x, y)
-      // });
+      if (this.paddle2.body?.velocity) {
+        if (this.cursors.up.isDown) {
+          // console.log("up");
+          if (this.paddle2.body.velocity.y != -this.paddleSpeed) {
+            // console.log("up update");
+            this.paddle2.setVelocityY(-this.paddleSpeed);
+            // this.store.dispatch(MovePlayer1({ new_velocityY: this.paddle2.body.velocity.y }))
+          }
+        } else if (this.cursors.down.isDown) {
+          // console.log("down");
+          if (this.paddle2.body.velocity.y != this.paddleSpeed) {
+            // console.log("down update");
+            this.paddle2.setVelocityY(this.paddleSpeed);
+            // this.store.dispatch(MovePlayer2({ new_velocityY: this.paddle2.body.velocity.y }))
+          }
+        } else if (this.paddle2.body?.velocity.y != 0) {
+          // console.log("update stil");
+          this.paddle2.setVelocityY(0);
+          // this.store.dispatch(MovePlayer1({ new_velocityY: this.paddle2.body.velocity.y }))
+        }
+      }
     }
-
-    // if (this.player1Score === 3) {
-    //   this.scene.pause();
-    //   this.winTextPlayer1.setText(`WIN`);
-    //   console.log("Game paused!");
-    //   return;
-    // }
-    // if (this.player2Score === 3) {
-    //   this.scene.pause();
-    //   this.winTextPlayer2.setText(`WIN`);
-    //   console.log("Game paused!");
-    //   return;
-    // }
 
     if (this.respawnDelayTimer && this.respawnDelayTimer.getProgress() === 1) {
       this.respawnDelayTimer = undefined;
@@ -301,10 +313,52 @@ export class GameScene extends Phaser.Scene {
       this.scoreText1.setText(`${this.player1Score}`);
       this.store.dispatch(IncrementPlayerScore1());
     }
-    this.resetBall()
+    if (this.game_state == 'player1')
+      this.resetBall()
   }
 
 }
 
 
+ // { // PLAYER AI
+
+    //   { // PLAYER AI
+    //     const ballVelocityX = this.ball?.body?.velocity?.x ?? 0;
+
+    //     if (ballVelocityX > 0) {
+    //       const time = (this.paddle2.x - this.ball.x + -50) / ballVelocityX;
+    //       const predictedY = this.ball.y + (this.ball.body?.velocity.y ?? 0) * time;
+
+    //       if (!(predictedY < 60 || predictedY > this.gameHeight - 60)) {
+    //         this.movePaddleToPosition(this.paddle2.x, predictedY, this.paddleSpeed);
+    //       }
+    //     } else {
+    //       this.paddle2.setVelocityY(0);
+    //     }
+    //   }
+
+    //   // if (this.paddle2.body?.velocity)
+    //   //   this.store.dispatch(MovePlayer2({ new_velocityY: this.paddle2.body?.velocity.y }))
+
+    //   // this.store.pipe(select(selectPlayer2Velocity)).subscribe((state: number) => {
+    //   //   // console.log(state)
+    //   // });
+    //   // this.paddle2PosObservable.subscribe(({ x, y }) => {
+    //   //   console.log("here")
+    //   //   console.log(x, y)
+    //   // });
+    // }
+
+    // if (this.player1Score === 3) {
+    //   this.scene.pause();
+    //   this.winTextPlayer1.setText(`WIN`);
+    //   console.log("Game paused!");
+    //   return;
+    // }
+    // if (this.player2Score === 3) {
+    //   this.scene.pause();
+    //   this.winTextPlayer2.setText(`WIN`);
+    //   console.log("Game paused!");
+    //   return;
+    // }
 

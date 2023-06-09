@@ -8,6 +8,7 @@ import { EffectsModule } from '@ngrx/effects';
 import { GameComponent } from './game/game.component';
 import { StoreDevtoolsModule } from '@ngrx/store-devtools';
 import { SocketIoConfig, SocketIoModule } from 'ngx-socket-io';
+import { GameEffects } from './game-state/game.effects';
 
 const config: SocketIoConfig = { url: 'http://localhost:3001' };
 
@@ -21,7 +22,7 @@ const config: SocketIoConfig = { url: 'http://localhost:3001' };
   imports: [
     BrowserModule,
     // StoreModule.forRoot({}, {}),
-    // EffectsModule.forRoot([]),
+    EffectsModule.forRoot([GameEffects]),
     StoreModule.forRoot({ game: reducer }),
     StoreDevtoolsModule.instrument({ maxAge: 50, logOnly: !isDevMode() }),
     SocketIoModule.forRoot(config)

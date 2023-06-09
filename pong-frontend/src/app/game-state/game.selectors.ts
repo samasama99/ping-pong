@@ -41,3 +41,8 @@ export const selectBallVelocity = createSelector(
   selectGame,
   (state) => state.game.ball.velocity
 );
+
+export const getGameState = createSelector(
+  selectGame,
+  (state) => state.game.state
+);

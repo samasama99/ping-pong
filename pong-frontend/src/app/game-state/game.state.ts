@@ -1,7 +1,10 @@
+import { GameStateType } from "../game.service";
+
 export interface GameState {
   player1: PlayerState;
   player2: PlayerState;
   ball: BallState;
+  state: GameStateType;
 }
 
 export interface PlayerState {
@@ -29,6 +32,7 @@ export const initialState: GameState = {
     velocity: { x: 0, y: 0 },
     speed: 0,
   },
+  state: 'pending',
 };
 
 

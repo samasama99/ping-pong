@@ -15,10 +15,10 @@ import { StoreDevtoolsModule } from '@ngrx/store-devtools';
   ],
   imports: [
     BrowserModule,
-    StoreModule.forRoot({}, {}),
-    EffectsModule.forRoot([]),
+    // StoreModule.forRoot({}, {}),
+    // EffectsModule.forRoot([]),
     StoreModule.forRoot({ game: reducer }),
-    StoreDevtoolsModule.instrument({ maxAge: 25, logOnly: !isDevMode() }),
+    StoreDevtoolsModule.instrument({ maxAge: 50, logOnly: !isDevMode() }),
   ],
   providers: [],
   bootstrap: [AppComponent]

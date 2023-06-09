@@ -1,15 +1,16 @@
 import { createAction, props } from '@ngrx/store';
+import { vector } from './game.reducer';
 
 export const CreateGame = createAction('[Game] Create Game');
 
 export const MovePlayer1 = createAction(
   '[Game] Move Player 1',
-  props<{ new_pos: { x: number, y: number } }>()
+  props<{ new_velocityY: number }>()
 );
 
 export const MovePlayer2 = createAction(
   '[Game] Move Player 2',
-  props<{ new_pos: { x: number, y: number } }>()
+  props<{ new_velocityY: number }>()
 );
 
 export const UpdateBall = createAction(

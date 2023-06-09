@@ -2,42 +2,42 @@ import { createSelector } from '@ngrx/store';
 import { GameState } from './game.state';
 
 // Select the game state from the root state
-export const selectGame = (state: GameState) => state;
+export const selectGame = (state: any) => state;
 
 // Select the player positions
 export const selectPlayer1 = createSelector(
   selectGame,
-  (game: GameState) => game.player1
+  (state) => state.game.player1
 );
 
 export const selectPlayer2 = createSelector(
   selectGame,
-  (game) => game.player2
+  (state) => state.game.player2
 );
 
 // Select the ball position
 export const selectBall = createSelector(
   selectGame,
-  (game) => game.ball
+  (state) => state.game.ball
 );
 
-export const selectPlayer1Position = createSelector(
+export const selectPlayer1Velocity = createSelector(
   selectGame,
-  (game: GameState) => game.player1.position
+  (state) => state.game.player1.velocityY
 );
 
-export const selectPlayer2Position = createSelector(
+export const selectPlayer2Velocity = createSelector(
   selectGame,
-  (game: GameState) => game.player2.position
+  (state) => state.game.player2.velocityY
 );
 
 // Select the ball position
 export const selectBallPosition = createSelector(
   selectGame,
-  (game) => game.ball.position
+  (state) => state.game.ball.position
 );
 
 export const selectBallVelocity = createSelector(
   selectGame,
-  (game) => game.ball.velocity
+  (state) => state.game.ball.velocity
 );

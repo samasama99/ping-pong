@@ -5,6 +5,8 @@ import { CreateGame, IncrementPlayerScore1, IncrementPlayerScore2, MovePlayer1, 
 import { Observable } from 'rxjs';
 import { GameState } from './game-state/game.state';
 import { inject } from '@angular/core';
+import { selectGame, selectPlayer2 } from './game-state/game.selectors';
+import { selectPlayer2Velocity } from './game-state/game.selectors';
 
 
 export class GameScene extends Phaser.Scene {
@@ -26,6 +28,8 @@ export class GameScene extends Phaser.Scene {
   private gameWidth = 0;
   private respawnDelayTimer: Phaser.Time.TimerEvent | undefined;
   private store: Store<GameState>;
+  readonly inital_ball_speed = 650;
+  private current_ball_speed = this.inital_ball_speed;
 
   constructor(store: Store<GameState>) {
     super({ key: 'game' });
@@ -71,19 +75,18 @@ export class GameScene extends Phaser.Scene {
     this.wallUp.setImmovable(true);
 
     this.physics.add.collider(this.ball, [this.paddle1, this.paddle2], this.handleBallPaddleCollision as any, undefined, this);
-    this.physics.add.collider(this.ball, [this.wallUp, this.wallDown], undefined, undefined, this);
-    this.physics.add.collider(this.wallUp, [this.paddle1, this.paddle2], undefined, undefined, this);
-    this.physics.add.collider(this.wallDown, [this.paddle1, this.paddle2], undefined, undefined, this);
+    this.physics.add.collider(this.ball, [this.wallUp, this.wallDown], this.handleBallWallCollision as any, undefined, this);
+    // this.physics.add.collider(this.wallUp, [this.paddle1, this.paddle2], undefined, undefined, this);
+    // this.physics.add.collider(this.wallDown, [this.paddle1, this.paddle2], undefined, undefined, this);
 
     this.ball.setBounce(1);
   }
 
   resetBall() {
-    const speed = 750;
-    const angleRange1 = Phaser.Math.RND.between(-55, -25);
-    const angleRange2 = Phaser.Math.RND.between(25, 55);
+    this.current_ball_speed = this.inital_ball_speed;
+    const sign = Phaser.Math.RND.between(0, 1) ? -1 : 1;
+    const angle = Phaser.Math.RND.between(sign * 55, sign * 25);
 
-    const angle = (Phaser.Math.RND.between(0, 1) === 0) ? angleRange1 : angleRange2;
     const angleRad = Phaser.Math.DegToRad(angle);
 
     const directionX = Math.cos(angleRad);
@@ -93,8 +96,8 @@ export class GameScene extends Phaser.Scene {
     const normalizedDirectionX = directionX / length;
     const normalizedDirectionY = directionY / length;
 
-    const velocityX = normalizedDirectionX * speed;
-    const velocityY = normalizedDirectionY * speed;
+    const velocityX = normalizedDirectionX * this.current_ball_speed;
+    const velocityY = normalizedDirectionY * this.current_ball_speed;
 
     const ball_x = this.gameWidth / 2;
     const ball_y = this.getRandomNumber(100, this.gameHeight - 100);
@@ -104,7 +107,7 @@ export class GameScene extends Phaser.Scene {
     this.store.dispatch(UpdateBall({
       new_pos: { x: ball_x, y: ball_y },
       new_velocity: { x: velocityX, y: velocityY },
-      new_speed: speed
+      new_speed: this.current_ball_speed
     }))
   }
 
@@ -130,51 +133,77 @@ export class GameScene extends Phaser.Scene {
   //   return degrees * (pi / 180);
   // }
 
+  // handleBallPaddleCollision(ball: Phaser.Physics.Arcade.Image, paddle: Phaser.Physics.Arcade.Image) {
+  //   if (this.ball.body) {
+  //     if (this.current_ball_speed < 1500) {
+  //       this.current_ball_speed = Math.sqrt(this.ball.body.velocity.x ** 2 + this.ball.body.velocity.y ** 2);
+  //       this.ball.setVelocity(this.ball.body.velocity.x * 1.02, this.ball.body.velocity.y * 1.02);
+  //     }
+  //     this.store.dispatch(UpdateBall({
+  //       new_pos: { x: this.ball.x, y: this.ball.y },
+  //       new_velocity: { x: this.ball.body.velocity.x, y: this.ball.body.velocity.y },
+  //       new_speed: this.current_ball_speed
+  //     }))
+  //   }
+  // }
+
   handleBallPaddleCollision(ball: Phaser.Physics.Arcade.Image, paddle: Phaser.Physics.Arcade.Image) {
     if (this.ball.body) {
-      // const impactAngle = Phaser.Math.Angle.Between(this.ball.x, this.ball.y, paddle.x, paddle.y);
+      const ballBounds = this.ball.getBounds();
+      const paddleBounds = paddle.getBounds();
+      const ballRight = ballBounds.right;
+      const ballLeft = ballBounds.left;
+      const paddleRight = paddleBounds.right;
+      const paddleLeft = paddleBounds.left;
 
-      // // Calculate the new angle for the ball's direction
+      if ((ballRight >= paddleLeft && ballRight <= paddleRight) || (ballLeft >= paddleLeft && ballLeft <= paddleRight)) {
+        if (this.current_ball_speed < 1500) {
+          this.current_ball_speed = Math.sqrt(this.ball.body.velocity.x ** 2 + this.ball.body.velocity.y ** 2);
+          this.ball.setVelocity(this.ball.body.velocity.x * 1.02, this.ball.body.velocity.y * 1.02);
+        }
+      }
 
-      // const newAngle = Math.PI - impactAngle;
-      // console.log(impactAngle, newAngle)
-
-      // Calculate the new velocity based on the angle
-      const speed = Math.sqrt(this.ball.body.velocity.x ** 2 + this.ball.body.velocity.y ** 2);
-      if (speed < 1500)
-        this.ball.setVelocity(this.ball.body.velocity.x * 1.1, this.ball.body.velocity.y * 1.1);
-      // if (impactAngle < this.degrees_to_radians(15)) {
-      //   console.log("new angle apply")
-      //   const newVelocityX = Math.cos(newAngle) * speed;
-      //   const newVelocityY = Math.sin(newAngle) * speed;
-
-      //   // Set the new velocity for the ball
-      //   this.ball.setVelocity(newVelocityX, newVelocityY);
-      // }
       this.store.dispatch(UpdateBall({
         new_pos: { x: this.ball.x, y: this.ball.y },
         new_velocity: { x: this.ball.body.velocity.x, y: this.ball.body.velocity.y },
-        new_speed: speed
+        new_speed: this.current_ball_speed
+      }));
+    }
+  }
+
+  handleBallWallCollision(ball: Phaser.Physics.Arcade.Image, paddle: Phaser.Physics.Arcade.Image) {
+    if (this.ball.body) {
+      this.store.dispatch(UpdateBall({
+        new_pos: { x: this.ball.x, y: this.ball.y },
+        new_velocity: { x: this.ball.body.velocity.x, y: this.ball.body.velocity.y },
+        new_speed: this.current_ball_speed
       }))
     }
 
-    // if (this.ball.body) {
-    //   const speed = Math.sqrt(this.ball.body?.velocity.x ** 2 + this.ball.body?.velocity.y ** 2);
-    //   if (speed < 1500)
-    //     this.ball.setVelocity(this.ball.body?.velocity.x * 1.1, this.ball.body?.velocity.y * 1.1);
-    // }
   }
 
   override update() {
-    // console.log("update", this.ball.x, this.ball.y)
-    if (this.cursors.up.isDown) {
-      this.paddle1.setVelocityY(-this.paddleSpeed);
-    } else if (this.cursors.down.isDown) {
-      this.paddle1.setVelocityY(this.paddleSpeed);
-    } else {
-      this.paddle1.setVelocityY(0);
+    if (this.paddle1.body?.velocity) {
+      if (this.cursors.up.isDown) {
+        // console.log("up");
+        if (this.paddle1.body.velocity.y != -this.paddleSpeed) {
+          // console.log("up update");
+          this.paddle1.setVelocityY(-this.paddleSpeed);
+          this.store.dispatch(MovePlayer1({ new_velocityY: this.paddle1.body.velocity.y }))
+        }
+      } else if (this.cursors.down.isDown) {
+        // console.log("down");
+        if (this.paddle1.body.velocity.y != this.paddleSpeed) {
+          // console.log("down update");
+          this.paddle1.setVelocityY(this.paddleSpeed);
+          this.store.dispatch(MovePlayer1({ new_velocityY: this.paddle1.body.velocity.y }))
+        }
+      } else if (this.paddle1.body?.velocity.y != 0) {
+        // console.log("update stil");
+        this.paddle1.setVelocityY(0);
+        this.store.dispatch(MovePlayer1({ new_velocityY: this.paddle1.body.velocity.y }))
+      }
     }
-
     { // PLAYER AI
       const ballVelocityX = this.ball?.body?.velocity?.x ?? 0;
 
@@ -194,41 +223,49 @@ export class GameScene extends Phaser.Scene {
             this.paddle2.setVelocityY(0);
           }
         }
-
       } else {
         this.paddle2.setVelocityY(0);
       }
+      if (this.paddle2.body?.velocity)
+        this.store.dispatch(MovePlayer2({ new_velocityY: this.paddle2.body?.velocity.y }))
+
+      this.store.pipe(select(selectPlayer2Velocity)).subscribe((state: number) => {
+        // console.log(state)
+      });
+      // this.paddle2PosObservable.subscribe(({ x, y }) => {
+      //   console.log("here")
+      //   console.log(x, y)
+      // });
     }
 
-    if (this.player1Score === 3) {
-      this.scene.pause();
-      this.winTextPlayer1.setText(`WIN`);
-      console.log("Game paused!");
-      return;
-    }
-    if (this.player2Score === 3) {
-      this.scene.pause();
-      this.winTextPlayer2.setText(`WIN`);
-      console.log("Game paused!");
-      return;
-    }
+    // if (this.player1Score === 3) {
+    //   this.scene.pause();
+    //   this.winTextPlayer1.setText(`WIN`);
+    //   console.log("Game paused!");
+    //   return;
+    // }
+    // if (this.player2Score === 3) {
+    //   this.scene.pause();
+    //   this.winTextPlayer2.setText(`WIN`);
+    //   console.log("Game paused!");
+    //   return;
+    // }
 
-    // console.log({ respawnDelayTimer: this.respawnDelayTimer?.getProgress() })
     if (this.respawnDelayTimer && this.respawnDelayTimer.getProgress() === 1) {
       this.respawnDelayTimer = undefined;
     } else if (this.respawnDelayTimer) {
-      // console.log("skip")
       return;
     }
+
     if (this.ball.x < 0) {
       this.respawnDelayTimer = this.time.addEvent({
-        delay: 150, // Adjust the delay time (in milliseconds) as needed
+        delay: 150,
         callback: this.handleBallRespawn,
         callbackScope: this
       });
     } else if (this.ball.x > this.gameWidth) {
       this.respawnDelayTimer = this.time.addEvent({
-        delay: 150, // Adjust the delay time (in milliseconds) as needed
+        delay: 150,
         callback: this.handleBallRespawn,
         callbackScope: this
       });
@@ -236,18 +273,15 @@ export class GameScene extends Phaser.Scene {
 
   }
   private handleBallRespawn() {
-    // console.log(this.ball.x)
     if (this.ball.x < 0) {
-      this.store.dispatch(IncrementPlayerScore2());
       this.player2Score += 1;
       this.scoreText2.setText(`${this.player2Score}`);
+      this.store.dispatch(IncrementPlayerScore2());
     } else if (this.ball.x > this.gameWidth) {
-      this.store.dispatch(IncrementPlayerScore1());
       this.player1Score += 1;
       this.scoreText1.setText(`${this.player1Score}`);
+      this.store.dispatch(IncrementPlayerScore1());
     }
-
-    // this.physics.resume();
     this.resetBall()
   }
 

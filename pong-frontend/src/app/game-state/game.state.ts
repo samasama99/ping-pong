@@ -5,7 +5,7 @@ export interface GameState {
 }
 
 export interface PlayerState {
-  position: { x: number; y: number };
+  velocityY: number;
   score: number;
 }
 
@@ -17,11 +17,11 @@ export interface BallState {
 
 export const initialState: GameState = {
   player1: {
-    position: { x: 0, y: 0 },
+    velocityY: 0,
     score: 0,
   },
   player2: {
-    position: { x: 0, y: 0 },
+    velocityY: 0,
     score: 0,
   },
   ball: {

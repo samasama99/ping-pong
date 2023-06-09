@@ -35,6 +35,6 @@ export class GameComponent implements OnInit {
   ngOnInit() {
     this.game = new Phaser.Game(this.config);
     let gameScene = new GameScene(this.store);
-    this.game.scene.add('main', gameScene);
+    this.game.scene.add('GameScene', gameScene);
   }
 }

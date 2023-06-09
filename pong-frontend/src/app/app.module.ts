@@ -7,6 +7,11 @@ import { StoreModule } from '@ngrx/store';
 import { EffectsModule } from '@ngrx/effects';
 import { GameComponent } from './game/game.component';
 import { StoreDevtoolsModule } from '@ngrx/store-devtools';
+import { SocketIoConfig, SocketIoModule } from 'ngx-socket-io';
+
+const config: SocketIoConfig = { url: 'http://localhost:3001' };
+
+// const config: SocketIoConfig = { url: 'ws://localhost:3004', options: { transports: ['websocket'] } };
 
 @NgModule({
   declarations: [
@@ -19,6 +24,7 @@ import { StoreDevtoolsModule } from '@ngrx/store-devtools';
     // EffectsModule.forRoot([]),
     StoreModule.forRoot({ game: reducer }),
     StoreDevtoolsModule.instrument({ maxAge: 50, logOnly: !isDevMode() }),
+    SocketIoModule.forRoot(config)
   ],
   providers: [],
   bootstrap: [AppComponent]

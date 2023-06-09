@@ -1,4 +1,5 @@
 import { Injectable } from '@angular/core';
+import { Socket } from 'ngx-socket-io';
 import Phaser from 'phaser';
 
 @Injectable({
@@ -6,5 +7,9 @@ import Phaser from 'phaser';
 })
 export class GameService {
 
-  constructor() { }
+  constructor(private socket: Socket) { }
+
+  createGame() {
+    this.socket.emit('createGame');
+  }
 }

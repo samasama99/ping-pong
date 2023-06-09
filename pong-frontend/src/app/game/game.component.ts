@@ -4,6 +4,8 @@ import Phaser from 'phaser';
 import 'phaser3-nineslice';
 import { Store } from '@ngrx/store';
 import { GameState } from '../game-state/game.state';
+import { Socket } from 'ngx-socket-io';
+import { GameService } from '../game.service';
 
 @Component({
   selector: 'app-game',
@@ -15,7 +17,7 @@ export class GameComponent implements OnInit {
   private config: Phaser.Types.Core.GameConfig;
   private store: Store<GameState> = inject(Store);
 
-  constructor() {
+  constructor(private gameService: GameService) {
     this.config = {
       type: Phaser.AUTO,
       width: 1300,
@@ -36,5 +38,6 @@ export class GameComponent implements OnInit {
     this.game = new Phaser.Game(this.config);
     let gameScene = new GameScene(this.store);
     this.game.scene.add('GameScene', gameScene);
+    this.gameService.createGame()
   }
 }

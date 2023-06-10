@@ -22,7 +22,8 @@ import { json } from 'stream/consumers';
 
 @WebSocketGateway(3001, {
   cors: {
-    origin: 'http://localhost:4200',
+    origin: '*',
+    // origin: 'http://e2r9p10.1337.ma:4200',
     credentials: true,
   }
 }
@@ -31,7 +32,7 @@ export class GameGateway {
   // @WebSocketServer()
   // private server: Server;
   private queue: Array<Socket> = [];
-  private games: Map<number, { player1: Socket, player2: Socket }> = new Map<number, { player1: Socket, player2: Socket }>();;
+  private games: Map<number, { player1: Socket, player2: Socket, player1Ready: boolean, player2Ready: boolean }> = new Map();;
 
   constructor() { }
 
@@ -40,48 +41,51 @@ export class GameGateway {
     console.log("create game");
     if (this.queue.length == 0) {
       this.queue.push(socket)
-      socket.emit('changeState', JSON.stringify('in queue'));
+      socket.emit('changeState', JSON.stringify({ gameState: 'Queue' }));
       return;
     }
 
     let player1: Socket = this.queue.pop()
     let player2: Socket = socket;
     const gameId = Date.now();
-    this.games[gameId] = { player1, player2 };
+    this.games[gameId] = { player1, player2, player1Ready: false, player2Ready: false };
 
 
-    player1.on('updatePlayer1Velocity', (state) => {
-      player2.emit('updatePlayer1VelocityEvent', state);
-    });
+    player1.on('sendMyPaddleState', (state) => {
+      player2.emit('updateOpponentPaddle', state);
+    })
 
-    player2.on('updatePlayer2Velocity', (state) => {
-      player1.emit('updatePlayer2VelocityEvent', state);
-    });
-
-    player1.on('updateBallState', (state) => {
-      console.log("update Ball with", state)
-      console.log("update Ball with", JSON.parse(state))
-      player2.emit('updateBallStateEvent', state);
-    });
+    player2.on('sendMyPaddleState', (state) => {
+      player1.emit('updateOpponentPaddle', state);
+    })
 
     player1.on('disconnect', () => {
-      player2.emit('changeState', JSON.stringify('pending'))
+      player2.emit('changeState', JSON.stringify('pause'))
     });
 
     player2.on('disconnect', () => {
-      player1.emit('changeState', JSON.stringify('pending'))
+      player1.emit('changeState', JSON.stringify('pause'))
     });
 
-    player1.on('updatePlayer1Score', () => {
-      player2.emit('updatePlayer1ScoreEvent')
+    player1.emit('changeState', JSON.stringify({ gameState: 'Playing', playerNumber: "PlayerOne" }));
+    player2.emit('changeState', JSON.stringify({ gameState: 'Playing', playerNumber: "PlayerTwo" }));
+
+
+    player1.on('playerIsReady', () => {
+      console.log('player 1 is ready');
+      player1.emit('updateBallState', JSON.stringify({
+        position: { x: 1300 / 2, y: 960 / 2 },
+        velocity: { x: 500, y: 0 },
+      }));
+    })
+    player2.on('playerIsReady', () => {
+      console.log('player 2 is ready');
+      player2.emit('updateBallState', JSON.stringify({
+        position: { x: 1300 / 2, y: 960 / 2 },
+        velocity: { x: 500, y: 0 },
+      }));
     })
 
-    player1.on('updatePlayer2Score', () => {
-      player2.emit('updatePlayer2ScoreEvent')
-    })
-
-    player1.emit('changeState', JSON.stringify({ gameId, state: 'player1' }));
-    player2.emit('changeState', JSON.stringify({ gameId, state: 'player2' }));
     console.log("Starting Game", { gameId });
   }
 }

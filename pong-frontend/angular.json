@@ -63,7 +63,8 @@
           "builder": "@angular-devkit/build-angular:dev-server",
           "configurations": {
             "production": {
-              "browserTarget": "pong-test:build:production"
+              "browserTarget": "pong-test:build:production",
+              "host": "0.0.0.0"
             },
             "development": {
               "browserTarget": "pong-test:build:development"
@@ -74,6 +75,10 @@
         "extract-i18n": {
           "builder": "@angular-devkit/build-angular:extract-i18n",
           "options": {
+            "allowedCommonJsDependencies": [
+              "phaser",
+              "phaser3-nineslice"
+            ],
             "browserTarget": "pong-test:build"
           }
         },

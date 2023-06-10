@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 import 'phaser3-nineslice';
 import { Store } from '@ngrx/store';
-import { CreateGame, SendMyPaddleState, StartGame, } from './game-state/game.actions'
+import { CreateGame, SendBallState, SendMyPaddleState, StartGame, UpdateBall, } from './game-state/game.actions'
 import { GameState, GameStateType, PaddleState, PlayerNumber } from './game-state/game.state';
 import { Game } from "phaser";
 import { selectBallState, selectGameState, selectOpponentPaddleState, selectPlayerNumber } from './game-state/game.selectors';
@@ -140,6 +140,11 @@ export class GameScene extends Phaser.Scene {
       this.ball.setPosition(position.x, position.y);
       this.ball.setVelocity(velocity.x, velocity.y);
     })
+    if (this.playerNumber == PlayerNumber.PlayerOne) {
+      setInterval(() => {
+        this.store.dispatch(SendBallState({ position: { x: this.ball.x, y: this.ball.y }, velocity: { x: this.ball?.body?.velocity?.x ?? 0, y: this.ball?.body?.velocity?.y ?? 0 } }));
+      }, 1000);
+    }
     // this.initText();
   }
 

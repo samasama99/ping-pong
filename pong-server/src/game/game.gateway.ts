@@ -73,18 +73,44 @@ export class GameGateway {
 
     player1.on('playerIsReady', () => {
       console.log('player 1 is ready');
-      player1.emit('updateBallState', JSON.stringify({
-        position: { x: 1300 / 2, y: 960 / 2 },
-        velocity: { x: 500, y: 0 },
-      }));
-    })
+      this.games[gameId].player1Ready = true;
+      if (this.games[gameId].player2Ready) {
+        player1.emit('updateBallState', JSON.stringify({
+          position: { x: 1300 / 2, y: 960 / 2 },
+          velocity: { x: 500, y: 0 },
+        }));
+        player2.emit('updateBallState', JSON.stringify({
+          position: { x: 1300 / 2, y: 960 / 2 },
+          velocity: { x: 500, y: 0 },
+        }));
+      }
+    });
+
     player2.on('playerIsReady', () => {
       console.log('player 2 is ready');
+      this.games[gameId].player2Ready = true;
+      if (this.games[gameId].player1Ready) {
+        player1.emit('updateBallState', JSON.stringify({
+          position: { x: 1300 / 2, y: 960 / 2 },
+          velocity: { x: 500, y: 0 },
+        }));
+        player2.emit('updateBallState', JSON.stringify({
+          position: { x: 1300 / 2, y: 960 / 2 },
+          velocity: { x: 500, y: 0 },
+        }));
+      }
+    });
+
+    player1.on('sendBallState', (state) => {
+      const data: { position: { x: number, y: number }, velocity: { x: number, y: number } } = JSON.parse(state);
+      console.log(state);
+      console.log(data);
       player2.emit('updateBallState', JSON.stringify({
-        position: { x: 1300 / 2, y: 960 / 2 },
-        velocity: { x: 500, y: 0 },
+        position: { x: data.position.x, y: data.position.y },
+        velocity: { x: data.velocity.x, y: data.velocity.y },
       }));
-    })
+    });
+    // player2.on('sendBallState', (state) => console.log("player 2", JSON.parse(state)));
 
     console.log("Starting Game", { gameId });
   }

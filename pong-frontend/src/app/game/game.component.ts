@@ -56,11 +56,11 @@ export class GameComponent implements OnInit {
               this.gameScene = new GameScene(this.store, state.playerNumber);
               this.game.scene.add('GameScene', this.gameScene);
               this.gameScene.scene.start();
+              this.gameService.updateBallStateEvent();
+              this.gameService.updateOpponentPaddle();
+              this.gameService.updatePlayerScoreEvent();
               this.gameService.playerIsReady()
             }
-            this.gameService.updateBallStateEvent();
-            this.gameService.updateOpponentPaddle();
-            this.gameService.updatePlayerScoreEvent();
             break;
           }
           // case GameStateType.Created:

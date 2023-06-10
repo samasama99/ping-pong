@@ -41,3 +41,11 @@ export const SetPlayerNumber = createAction(
     playerNumber: PlayerNumber
   }>()
 )
+
+export const SendBallState = createAction(
+  '[Game] Send Ball Position',
+  props<{
+    position: { x: number, y: number }
+    velocity: { x: number, y: number }
+  }>()
+)

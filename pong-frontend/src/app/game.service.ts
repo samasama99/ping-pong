@@ -53,5 +53,8 @@ export class GameService {
   }
 
 
+  sendBallState(position: { x: number; y: number; }, velocity: { x: number; y: number; }) {
+    this.socket.emit('sendBallState', JSON.stringify({ position: { x: position.x, y: position.y }, velocity: { x: velocity.x, y: velocity.y } }));
+  }
 
 }

@@ -46,3 +46,15 @@ export const getGameState = createSelector(
   selectGame,
   (state) => state.game.state
 );
+
+export const selectPlayer1Score = createSelector(
+  selectGame,
+  (state) => state.game.player1.score
+);
+
+export const selectPlayer2Score = createSelector(
+  selectGame,
+  (state) => state.game.player2.score
+);
+
+

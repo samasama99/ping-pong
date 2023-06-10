@@ -47,25 +47,38 @@ export class GameGateway {
     let player1: Socket = this.queue.pop()
     let player2: Socket = socket;
     const gameId = Date.now();
+    this.games[gameId] = { player1, player2 };
 
-    player1.on('disconnect', () => {
-      player2.emit('changeState', JSON.stringify('pending'))
+
+    player1.on('updatePlayer1Velocity', (state) => {
+      player2.emit('updatePlayer1VelocityEvent', state);
     });
 
-    player1.on('updatePlayerVelocity', (state) => {
-      console.log(state)
+    player2.on('updatePlayer2Velocity', (state) => {
+      player1.emit('updatePlayer2VelocityEvent', state);
     });
 
     player1.on('updateBallState', (state) => {
-      console.log(state)
+      console.log("update Ball with", state)
+      console.log("update Ball with", JSON.parse(state))
       player2.emit('updateBallStateEvent', state);
+    });
+
+    player1.on('disconnect', () => {
+      player2.emit('changeState', JSON.stringify('pending'))
     });
 
     player2.on('disconnect', () => {
       player1.emit('changeState', JSON.stringify('pending'))
     });
 
-    this.games[gameId] = { player1, player2 };
+    player1.on('updatePlayer1Score', () => {
+      player2.emit('updatePlayer1ScoreEvent')
+    })
+
+    player1.on('updatePlayer2Score', () => {
+      player2.emit('updatePlayer2ScoreEvent')
+    })
 
     player1.emit('changeState', JSON.stringify({ gameId, state: 'player1' }));
     player2.emit('changeState', JSON.stringify({ gameId, state: 'player2' }));

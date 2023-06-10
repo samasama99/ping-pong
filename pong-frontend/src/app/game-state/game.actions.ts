@@ -14,6 +14,27 @@ export const MovePlayer2 = createAction(
   props<{ new_velocityY: number }>()
 );
 
+
+export const UpdatePlayer1 = createAction(
+  '[Game] Update Player 1',
+  props<{ new_velocityY: number }>()
+);
+
+export const UpdatePlayer2 = createAction(
+  '[Game] Update Player 2',
+  props<{ new_velocityY: number }>()
+);
+
+
+export const MoveBall = createAction(
+  '[Game] Move Ball',
+  props<{
+    new_pos: { x: number, y: number },
+    new_velocity: { x: number, y: number },
+    new_speed: number
+  }>()
+)
+
 export const UpdateBall = createAction(
   '[Game] Update Ball',
   props<{
@@ -23,13 +44,22 @@ export const UpdateBall = createAction(
   }>()
 )
 
-export const IncrementPlayerScore1 = createAction(
+export const IncrementPlayer1Score = createAction(
   '[Game] Increment Player Score 1'
 )
 
-export const IncrementPlayerScore2 = createAction(
+export const IncrementPlayer2Score = createAction(
   '[Game] Increment Player Score 2',
 )
+
+export const UpdatePlayer1Score = createAction(
+  '[Game] Update Player Score 1'
+)
+
+export const UpdatePlayer2Score = createAction(
+  '[Game] Update Player Score 2',
+)
+
 export const ChangeState = createAction(
   '[Game] Change State',
   props<{

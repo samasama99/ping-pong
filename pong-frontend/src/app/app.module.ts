@@ -24,7 +24,7 @@ const config: SocketIoConfig = { url: 'http://localhost:3001' };
     // StoreModule.forRoot({}, {}),
     EffectsModule.forRoot([GameEffects]),
     StoreModule.forRoot({ game: reducer }),
-    StoreDevtoolsModule.instrument({ maxAge: 50, logOnly: !isDevMode() }),
+    StoreDevtoolsModule.instrument({ maxAge: 500, logOnly: !isDevMode() }),
     SocketIoModule.forRoot(config)
   ],
   providers: [],

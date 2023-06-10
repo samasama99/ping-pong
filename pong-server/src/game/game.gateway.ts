@@ -105,13 +105,55 @@ export class GameGateway {
       const data: { position: { x: number, y: number }, velocity: { x: number, y: number } } = JSON.parse(state);
       console.log(state);
       console.log(data);
-      player2.emit('updateBallState', JSON.stringify({
-        position: { x: data.position.x, y: data.position.y },
-        velocity: { x: data.velocity.x, y: data.velocity.y },
-      }));
+      if (data.position.x < -50 || data.position.x > 1350) {
+
+        const newStart = this.getNewStart();
+        player1.emit('updateBallState', JSON.stringify(newStart));
+        player2.emit('updateBallState', JSON.stringify(newStart));
+      } else {
+
+        player1.emit('updateBallState', JSON.stringify({
+          position: { x: data.position.x, y: data.position.y },
+          velocity: { x: data.velocity.x, y: data.velocity.y },
+        }));
+        player2.emit('updateBallState', JSON.stringify({
+          position: { x: data.position.x, y: data.position.y },
+          velocity: { x: data.velocity.x, y: data.velocity.y },
+        }));
+      }
     });
     // player2.on('sendBallState', (state) => console.log("player 2", JSON.parse(state)));
 
     console.log("Starting Game", { gameId });
+  }
+  private getNewStart() {
+    console.log("resetBall");
+    const sign = Math.random() < 0.5 ? -1 : 1;
+    const angle = Math.floor(Math.random() * (sign * 55 - sign * 25 + 1) + sign * 25);
+
+    const angleRad = this.degreesToRadians(angle);
+
+    const directionX = Math.cos(angleRad);
+    const directionY = Math.sin(angleRad);
+
+    const length = Math.sqrt(directionX ** 2 + directionY ** 2);
+    const normalizedDirectionX = directionX / length;
+    const normalizedDirectionY = directionY / length;
+
+    const velocity = { x: normalizedDirectionX * 650, y: normalizedDirectionY * 650 };
+
+    const position = {
+      x: 1300 / 2, y: this.getRandomNumber(100, 690 - 100)
+    };
+
+    return { position, velocity };
+  }
+
+  private degreesToRadians(degrees: number): number {
+    return (degrees * Math.PI) / 180;
+  }
+
+  private getRandomNumber(min: number, max: number): number {
+    return Math.floor(Math.random() * (max - min + 1) + min);
   }
 }

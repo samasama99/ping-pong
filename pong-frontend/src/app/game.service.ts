@@ -1,8 +1,7 @@
 import { Injectable } from '@angular/core';
 import { Store } from '@ngrx/store';
 import { Socket } from 'ngx-socket-io';
-import { GameStateType, PaddleState, PlayerNumber } from './game-state/game.state';
-import { SetPlayerNumber, UpdateBall, UpdateGameState, UpdateOpponentPaddle, UpdateScore } from './game-state/game.actions';
+import { SetPlayerNumber, UpdateBall, UpdateGameState, UpdateOpponentPosition, UpdateScore } from './game-state/game.actions';
 
 
 @Injectable({
@@ -16,26 +15,24 @@ export class GameService {
     return this.socket.fromEvent<string>('changeState')
   }
 
-  sendMyPaddleState(paddleState: PaddleState) {
-    const payload = { paddleState };
-    this.socket.emit('sendMyPaddleState', JSON.stringify(payload));
+  sendMyPaddlePosition(myPaddle: number) {
+    this.socket.emit('sendMyPaddleState', JSON.stringify({ myPaddle }));
   }
 
   updateOpponentPaddle() {
     this.socket.fromEvent<string>('updateOpponentPaddle').subscribe((state) => {
-      const _state = JSON.parse(state);
-      this.store.dispatch(UpdateOpponentPaddle({ paddleState: _state.paddleState }))
+      const opponentPaddle = JSON.parse(state);
+      this.store.dispatch(UpdateOpponentPosition({ opponentPaddle }))
     })
   }
 
   updateBallStateEvent() {
     this.socket.fromEvent<string>('updateBallState').subscribe((state) => {
-      const { position, velocity }: {
-        position: { x: number, y: number },
-        velocity: { x: number, y: number },
+      const ball: {
+        x: number, y: number
       } = JSON.parse(state);
 
-      this.store.dispatch(UpdateBall({ position, velocity }))
+      this.store.dispatch(UpdateBall({ ball }))
     })
   }
 
@@ -53,8 +50,8 @@ export class GameService {
   }
 
 
-  sendBallState(position: { x: number; y: number; }, velocity: { x: number; y: number; }) {
-    this.socket.emit('sendBallState', JSON.stringify({ position: { x: position.x, y: position.y }, velocity: { x: velocity.x, y: velocity.y } }));
-  }
+  // sendBallState(position: { x: number; y: number; }, velocity: { x: number; y: number; }) {
+  //   this.socket.emit('sendBallState', JSON.stringify({ position: { x: position.x, y: position.y }, velocity: { x: velocity.x, y: velocity.y } }));
+  // }
 
 }

@@ -1,20 +1,22 @@
 import { Action, createReducer, on } from '@ngrx/store';
-import { GameState, PaddleState, initialState } from './game.state';
-import { UpdateGameState, CreateGame, SendMyPaddleState, UpdateBall, UpdateScore, UpdateOpponentPaddle, SetPlayerNumber, } from './game.actions';
+import { GameState, initialState } from './game.state';
+import { UpdateGameState, CreateGame, SendMyPaddlePosition, UpdateBall, UpdateScore, UpdateOpponentPosition, SetPlayerNumber, } from './game.actions';
 
 export type vector = { x: number, y: number };
 
 export const gameReducer = createReducer(
   initialState,
   on(CreateGame, state => ({ ...state })),
-  on(SendMyPaddleState,
-    (state, { paddleState }) => ({ ...state, myPaddle: paddleState })
-  ),
-  on(UpdateOpponentPaddle,
-    (state, { paddleState }) => ({ ...state, opponentPaddle: paddleState })
-  ),
-  on(UpdateBall, (state, { position: newPosition, velocity: newVelocity }) =>
-    ({ ...state, ball: { position: newPosition, velocity: newVelocity } })
+  on(SendMyPaddlePosition, (state, { myPaddle }) => ({
+    ...state,
+    myPaddle
+  })),
+  on(UpdateOpponentPosition, (state, { opponentPaddle }) => ({
+    ...state,
+    opponentPaddle
+  })),
+  on(UpdateBall, (state, { ball }) =>
+    ({ ...state, ball: ball })
   ),
   on(UpdateScore, (state, { myScore, opponentScore }) =>
     ({ ...state, score: { myScore, opponentScore } })

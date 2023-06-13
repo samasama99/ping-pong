@@ -1,15 +1,15 @@
 import Phaser from 'phaser';
 import 'phaser3-nineslice';
 import { Store } from '@ngrx/store';
-import { CreateGame, SendBallState, SendMyPaddleState, StartGame, UpdateBall, } from './game-state/game.actions'
-import { GameState, GameStateType, PaddleState, PlayerNumber } from './game-state/game.state';
+import { SendMyPaddlePosition, StartGame, } from './game-state/game.actions'
+import { GameState, PlayerNumber } from './game-state/game.state';
 import { Game } from "phaser";
 import { selectBallState, selectGameState, selectOpponentPaddleState, selectPlayerNumber } from './game-state/game.selectors';
 
 
 export class GameScene extends Phaser.Scene {
   readonly paddleSpeed: number = 950; // Adjust the paddle speed as needed
-  readonly inital_ball_speed = 650;
+  // readonly inital_ball_speed = 650;
 
   private wallUp!: Phaser.Physics.Arcade.Image;
   private wallDown!: Phaser.Physics.Arcade.Image;
@@ -29,8 +29,6 @@ export class GameScene extends Phaser.Scene {
 
   private gameHeight = 0;
   private gameWidth = 0;
-  private respawnDelayTimer: Phaser.Time.TimerEvent | undefined;
-  // private store: Store<GameState>;
 
   constructor(private store: Store<GameState>, private playerNumber: PlayerNumber) {
     super({ key: 'game' });
@@ -80,27 +78,27 @@ export class GameScene extends Phaser.Scene {
   }
 
   setupGamePhysics() {
-    this.physics.world.enable([this.myPaddle, this.opponentPaddle, this.ball, this.wallDown, this.wallUp]);
+    // this.physics.world.enable([this.myPaddle, this.opponentPaddle, this.ball, this.wallDown, this.wallUp]);
 
-    this.myPaddle.setCollideWorldBounds(true);
-    this.myPaddle.setImmovable(true);
+    // this.myPaddle.setCollideWorldBounds(true);
+    // this.myPaddle.setImmovable(true);
 
-    this.opponentPaddle.setCollideWorldBounds(true);
-    this.opponentPaddle.setImmovable(true);
+    // this.opponentPaddle.setCollideWorldBounds(true);
+    // this.opponentPaddle.setImmovable(true);
 
 
 
-    this.wallDown.setCollideWorldBounds(true);
-    this.wallDown.setImmovable(true);
+    // this.wallDown.setCollideWorldBounds(true);
+    // this.wallDown.setImmovable(true);
 
-    this.wallUp.setCollideWorldBounds(true);
-    this.wallUp.setImmovable(true);
+    // this.wallUp.setCollideWorldBounds(true);
+    // this.wallUp.setImmovable(true);
 
-    this.physics.add.collider(this.ball, [this.myPaddle, this.opponentPaddle], undefined, undefined, this);
-    this.physics.add.collider(this.ball, [this.wallUp, this.wallDown], undefined, undefined, this);
+    // this.physics.add.collider(this.ball, [this.myPaddle, this.opponentPaddle], undefined, undefined, this);
+    // this.physics.add.collider(this.ball, [this.wallUp, this.wallDown], undefined, undefined, this);
 
-    this.ball.setBounce(1);
-    this.ball.setPushable(false);
+    // this.ball.setBounce(1);
+    // this.ball.setPushable(false);
   }
 
   // initText() {
@@ -117,49 +115,35 @@ export class GameScene extends Phaser.Scene {
     this.setupGameObject();
     this.setupGamePhysics();
 
+    this.store.select(selectOpponentPaddleState)
+      .subscribe((paddle) => {
+        console.log(paddle)
+        this.opponentPaddle.setY(paddle.position);
+      });
 
-    this.store.select(selectOpponentPaddleState).subscribe(paddleState => {
-      console.log("select player2 moved", paddleState);
-      switch (paddleState) {
-        case PaddleState.Down:
-          {
-            this.opponentPaddle.setVelocityY(this.paddleSpeed);
-            break;
-          }
-        case PaddleState.Up:
-          {
-            this.opponentPaddle.setVelocityY(-this.paddleSpeed);
-            break;
-          }
-        default:
-          this.opponentPaddle.setVelocityY(0);
-      }
-    })
-    this.store.select(selectBallState).subscribe(ballState => {
-      const { position, velocity } = ballState;
-      this.ball.setPosition(position.x, position.y);
-      this.ball.setVelocity(velocity.x, velocity.y);
-    })
-    if (this.playerNumber == PlayerNumber.PlayerOne) {
-      setInterval(() => {
-        this.store.dispatch(SendBallState({ position: { x: this.ball.x, y: this.ball.y }, velocity: { x: this.ball?.body?.velocity?.x ?? 0, y: this.ball?.body?.velocity?.y ?? 0 } }));
-      }, 1000);
-    }
+    this.store.select(selectBallState)
+      .subscribe(ballState => {
+        this.ball.setPosition(ballState.x, ballState.y);
+      });
     // this.initText();
   }
-
+  // private counter = 0;
+  // readonly updateInterval = 1;
   override update() {
+    // console.log(this.counter)
     if (this.myPaddle.body?.velocity) {
       if (this.cursors.up.isDown) {
         this.myPaddle.setVelocityY(-this.paddleSpeed);
-        this.store.dispatch(SendMyPaddleState({ paddleState: PaddleState.Up }))
+        this.store.dispatch(SendMyPaddlePosition({ myPaddle: this.myPaddle.y }));
       } else if (this.cursors.down.isDown) {
         this.myPaddle.setVelocityY(this.paddleSpeed);
-        this.store.dispatch(SendMyPaddleState({ paddleState: PaddleState.Down }))
+        this.store.dispatch(SendMyPaddlePosition({ myPaddle: this.myPaddle.y }));
       } else {
         if (this.myPaddle.body.velocity.y != 0) {
-          this.store.dispatch(SendMyPaddleState({ paddleState: PaddleState.Stil }))
           this.myPaddle.setVelocityY(0);
+          this.store.dispatch(SendMyPaddlePosition({ myPaddle: this.myPaddle.y }));
+          console.log("paddle1", this.myPaddle.body.position.x)
+          console.log("paddle2", this.opponentPaddle?.body?.position.x)
         }
       }
     }

@@ -1,25 +1,24 @@
 import { createAction, props } from '@ngrx/store';
-import { GameStateType, PaddleState, PlayerNumber } from './game.state';
+import { GameStateType, PlayerNumber } from './game.state';
 
 export const CreateGame = createAction('[Game] Create Game');
 
 export const StartGame = createAction('[Game] Start Game');
 
-export const SendMyPaddleState = createAction(
+export const SendMyPaddlePosition = createAction(
   '[Game] Update My Paddle',
-  props<{ paddleState: PaddleState }>()
+  props<{ myPaddle: number }>()
 );
 
-export const UpdateOpponentPaddle = createAction(
+export const UpdateOpponentPosition = createAction(
   '[Game] Update Opponent Paddle',
-  props<{ paddleState: PaddleState }>()
+  props<{ opponentPaddle: number }>()
 );
 
 export const UpdateBall = createAction(
   '[Game] Update Ball',
   props<{
-    position: { x: number, y: number },
-    velocity: { x: number, y: number },
+    ball: { x: number, y: number },
   }>()
 )
 
@@ -42,10 +41,3 @@ export const SetPlayerNumber = createAction(
   }>()
 )
 
-export const SendBallState = createAction(
-  '[Game] Send Ball Position',
-  props<{
-    position: { x: number, y: number }
-    velocity: { x: number, y: number }
-  }>()
-)

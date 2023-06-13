@@ -11,8 +11,8 @@ export class GameScene extends Phaser.Scene {
   readonly paddleSpeed: number = 950; // Adjust the paddle speed as needed
   // readonly inital_ball_speed = 650;
 
-  private wallUp!: Phaser.Physics.Arcade.Image;
-  private wallDown!: Phaser.Physics.Arcade.Image;
+  // private wallUp!: Phaser.Physics.Arcade.Image;
+  // private wallDown!: Phaser.Physics.Arcade.Image;
 
   private myPaddle!: Phaser.Physics.Arcade.Image;
   private opponentPaddle!: Phaser.Physics.Arcade.Image;
@@ -42,9 +42,10 @@ export class GameScene extends Phaser.Scene {
   }
 
   preload() {
-    this.load.image('paddle', '../assets/paddle.png');
-    this.load.image('ball', '../assets/ball.png');
-    this.load.image('wall', '../assets/wall.png');
+    this.load.svg('background', 'assets/background.svg');
+    this.load.svg('paddle', '../assets/paddle.svg');
+    this.load.svg('ball', '../assets/ball.svg');
+    this.load.svg('wall', '../assets/wall.svg');
   }
 
   // private getRandomNumber(min: number, max: number) {
@@ -56,15 +57,15 @@ export class GameScene extends Phaser.Scene {
       case PlayerNumber.PlayerOne:
         {
           console.log("init control PlayerOne")
-          this.myPaddle = this.physics.add.image(0.05 * this.gameWidth, this.gameHeight / 2, 'paddle');
-          this.opponentPaddle = this.physics.add.image(this.gameWidth - (0.0695 * this.gameWidth), this.gameHeight / 2, 'paddle');
+          this.myPaddle = this.physics.add.image(27, this.gameHeight / 2, 'paddle');
+          this.opponentPaddle = this.physics.add.image(this.gameWidth - 27, this.gameHeight / 2, 'paddle');
           break;
         }
       case PlayerNumber.PlayerTwo:
         {
           console.log("init control PlayerTwo")
-          this.myPaddle = this.physics.add.image(this.gameWidth - (0.0695 * this.gameWidth), this.gameHeight / 2, 'paddle');
-          this.opponentPaddle = this.physics.add.image(0.05 * this.gameWidth, this.gameHeight / 2, 'paddle');
+          this.opponentPaddle = this.physics.add.image(27, this.gameHeight / 2, 'paddle');
+          this.myPaddle = this.physics.add.image(this.gameWidth - 27, this.gameHeight / 2, 'paddle');
           break;
         }
       default:
@@ -73,32 +74,8 @@ export class GameScene extends Phaser.Scene {
 
     this.ball = this.physics.add.image(this.gameWidth / 2, this.gameHeight / 2, 'ball');
 
-    this.wallUp = this.physics.add.image(650, 15, 'wall');
-    this.wallDown = this.physics.add.image(650, this.gameHeight - 15, 'wall');
-  }
-
-  setupGamePhysics() {
-    // this.physics.world.enable([this.myPaddle, this.opponentPaddle, this.ball, this.wallDown, this.wallUp]);
-
-    // this.myPaddle.setCollideWorldBounds(true);
-    // this.myPaddle.setImmovable(true);
-
-    // this.opponentPaddle.setCollideWorldBounds(true);
-    // this.opponentPaddle.setImmovable(true);
-
-
-
-    // this.wallDown.setCollideWorldBounds(true);
-    // this.wallDown.setImmovable(true);
-
-    // this.wallUp.setCollideWorldBounds(true);
-    // this.wallUp.setImmovable(true);
-
-    // this.physics.add.collider(this.ball, [this.myPaddle, this.opponentPaddle], undefined, undefined, this);
-    // this.physics.add.collider(this.ball, [this.wallUp, this.wallDown], undefined, undefined, this);
-
-    // this.ball.setBounce(1);
-    // this.ball.setPushable(false);
+    // this.wallUp = this.physics.add.image(650, 15, 'wall');
+    // this.wallDown = this.physics.add.image(650, this.gameHeight - 15, 'wall');
   }
 
   // initText() {
@@ -112,13 +89,14 @@ export class GameScene extends Phaser.Scene {
     this.gameHeight = this.sys.canvas.height;
     this.gameWidth = this.sys.canvas.width;
     this.cursors = this.input?.keyboard?.createCursorKeys()!;
+    this.add.image(0, 0, 'background').setOrigin(0, 0);
+    this.cameras.main.setBackgroundColor('#103960');
     this.setupGameObject();
-    this.setupGamePhysics();
 
     this.store.select(selectOpponentPaddleState)
       .subscribe((paddle) => {
         console.log(paddle)
-        this.opponentPaddle.setY(paddle.position);
+        this.opponentPaddle.setY(paddle);
       });
 
     this.store.select(selectBallState)
@@ -142,8 +120,6 @@ export class GameScene extends Phaser.Scene {
         if (this.myPaddle.body.velocity.y != 0) {
           this.myPaddle.setVelocityY(0);
           this.store.dispatch(SendMyPaddlePosition({ myPaddle: this.myPaddle.y }));
-          console.log("paddle1", this.myPaddle.body.position.x)
-          console.log("paddle2", this.opponentPaddle?.body?.position.x)
         }
       }
     }

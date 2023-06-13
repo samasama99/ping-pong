@@ -21,7 +21,9 @@ export class GameService {
 
   updateOpponentPaddle() {
     this.socket.fromEvent<string>('updateOpponentPaddle').subscribe((state) => {
-      const opponentPaddle = JSON.parse(state);
+      const _state = JSON.parse(state);
+      const opponentPaddle = _state.myPaddle;
+      console.log("parse", opponentPaddle)
       this.store.dispatch(UpdateOpponentPosition({ opponentPaddle }))
     })
   }

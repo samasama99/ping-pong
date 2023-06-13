@@ -22,9 +22,10 @@ export class GameComponent implements OnInit {
   constructor(private gameService: GameService) {
     this.config = {
       type: Phaser.AUTO,
-      width: 1300,
-      height: 960,
+      width: 1232,
+      height: 685,
       parent: 'game-container', // Parent element ID
+      backgroundColor: '#103960',
       physics: {
         default: 'arcade',
         arcade: {

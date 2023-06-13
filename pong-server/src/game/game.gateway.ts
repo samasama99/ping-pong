@@ -16,6 +16,11 @@ export class GameGateway {
   // private server: Server;
   private queue: Array<Socket> = [];
   private games: { [gameId: number]: { player1: Socket, player2: Socket, player1Ready: boolean, player2Ready: boolean, gameInstance: GameInstance, velocity: { x: number, y: number } } } = {};
+  readonly gameWidth = 1232;
+  readonly gameHeight = 685;
+  readonly ballSize = 18;
+  readonly paddleWidth = 12;
+  readonly paddleHeight = 119;
 
   // const activeGameInstances: GameInstance[] = [];
 
@@ -40,46 +45,28 @@ export class GameGateway {
     // const ballCategory = 0x0001;
     // const paddleCategory = 0x0002;
 
-    const ballSize = 30;
     const newStart = this.getNewStart();
     const ballPosition = newStart.position;
     this.games[gameId].velocity = newStart.velocity;
 
-    const ball = Matter.Bodies.rectangle(1300 / 2, 690 / 2, ballSize, ballSize, {
-      // collisionFilter: {
-      //   category: ballCategory,
-      //   mask: paddleCategory,
-      // },
-      // velocity: velocity, // Set initial velocity directly during body creation
+    const ball = Matter.Bodies.rectangle(this.gameWidth / 2, this.gameHeight / 2, this.ballSize, this.ballSize, {
     });
 
     Matter.Body.setPosition(ball, ballPosition);
     Matter.Body.setVelocity(ball, this.games[gameId].velocity);
-    // console.log({ "velocity": ball.velocity });
-    // console.log({ "position": ball.position });
-    // Matter.World.add(newGameInstance.world, ball);
 
-    const width = 30;
-    const height = 150;
-    const paddle1_position = { x: 50.5, y: 690 / 2 };
-    const paddle2_position = { x: 1195.5, y: 690 / 2 };
-    const paddle1 = Matter.Bodies.rectangle(paddle1_position.x, paddle1_position.y, width, height, {
+    const paddle1_position = { x: 50.5, y: this.gameHeight / 2 };
+    const paddle2_position = { x: 1195.5, y: this.gameHeight / 2 };
+    const paddle1 = Matter.Bodies.rectangle(paddle1_position.x, paddle1_position.y, this.paddleWidth, this.gameHeight, {
       isStatic: true
-      // collisionFilter: {
-      //   category: paddleCategory,
-      //   mask: ballCategory,
-      // },
     });
 
-    const paddle2 = Matter.Bodies.rectangle(paddle2_position.x, paddle2_position.y, width, height, {
+    const paddle2 = Matter.Bodies.rectangle(paddle2_position.x, paddle2_position.y, this.paddleWidth, this.paddleHeight, {
       isStatic: true
-      // collisionFilter: {
-      //   category: paddleCategory,
-      //   mask: ballCategory,
-      // },
     });
-    const boundsTop = Matter.Bodies.rectangle(1300 / 2, -10, 1300, 20, { isStatic: true });
-    const boundsBottom = Matter.Bodies.rectangle(1300 / 2, 970, 1300, 20, { isStatic: true });
+
+    const boundsTop = Matter.Bodies.rectangle(this.gameWidth / 2, -10, this.gameWidth, 10, { isStatic: true });
+    const boundsBottom = Matter.Bodies.rectangle(this.gameWidth / 2, this.gameHeight + 10, this.gameWidth, 10, { isStatic: true });
     Matter.World.add(newGameInstance.world, [paddle1, paddle2, ball, boundsTop, boundsBottom]);
 
     ////
@@ -97,14 +84,14 @@ export class GameGateway {
 
     player1.on('sendMyPaddleState', (state) => {
       const paddle = JSON.parse(state);
-      const paddle1_position = { x: 50.5, y: paddle.myPaddle };
+      const paddle1_position = { x: 27, y: paddle.myPaddle };
       Matter.Body.setPosition(paddle1, paddle1_position);
       player2.emit('updateOpponentPaddle', state);
     })
 
     player2.on('sendMyPaddleState', (state) => {
       const paddle = JSON.parse(state);
-      const paddle2_position = { x: 1195.5, y: paddle.myPaddle };
+      const paddle2_position = { x: this.gameWidth - 27, y: paddle.myPaddle };
       Matter.Body.setPosition(paddle2, paddle2_position);
       player1.emit('updateOpponentPaddle', state);
     })
@@ -155,6 +142,8 @@ export class GameGateway {
 
     const startGame = () => {
       console.log("Starting The Engine")
+
+      Matter.Runner.run(newGameInstance.engine);
       Matter.Events.on(newGameInstance.engine, 'collisionStart', (event: Matter.IEventCollision<Matter.Engine>) => {
         event.pairs.forEach((pair) => {
           const bodyA = pair.bodyA;
@@ -169,23 +158,29 @@ export class GameGateway {
           }
         });
       })
-      setInterval(() => {
-        if (ball.position.x < -50 || ball.position.x > 1350) {
+
+
+      Matter.Events.on(newGameInstance.engine, 'beforeUpdate', () => {
+        if (ball.position.x < -25 || ball.position.x > this.gameWidth + 25) {
           const newStart = this.getNewStart();
           Matter.Body.setPosition(ball, newStart.position);
           this.games[gameId].velocity = newStart.velocity;
         }
+      });
+
+      Matter.Events.on(newGameInstance.engine, 'afterUpdate', () => {
         Matter.Body.setVelocity(ball, this.games[gameId].velocity);
-        // ball.velocity.x = this.games[gameId].velocity.x;
-        // ball.velocity.y = this.games[gameId].velocity.y;
         player1.emit('updateBallState', JSON.stringify({
-          x: ball.position.x, y: ball.position.y
+          x: ball.position.x,
+          y: ball.position.y,
         }));
         player2.emit('updateBallState', JSON.stringify({
-          x: ball.position.x, y: ball.position.y
+          x: ball.position.x,
+          y: ball.position.y,
         }));
-      }, 15);
-      Matter.Runner.run(newGameInstance.engine);
+      });
+
+
     };
 
 
@@ -209,8 +204,7 @@ export class GameGateway {
     const velocity = { x: normalizedDirectionX * 12, y: normalizedDirectionY * 12 };
 
     const position = {
-      x: 1300 / 2, y: this.getRandomNumber(0, 690)
-      // x: 1300 / 2, y: this.getRandomNumber(100, 690 - 100)
+      x: this.gameWidth / 2, y: this.getRandomNumber(0, this.gameHeight)
     };
 
     return { position, velocity };

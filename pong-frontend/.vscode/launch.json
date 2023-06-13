@@ -7,7 +7,7 @@
       "type": "chrome",
       "request": "launch",
       "preLaunchTask": "npm: start",
-      "url": "http://10.12.9.10:4200/"
+      "url": "http://10.12.5.13:4200/"
     },
   ]
 }

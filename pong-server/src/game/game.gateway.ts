@@ -91,15 +91,17 @@ export class GameGateway {
     })
 
     player1.on('disconnect', () => {
-      player2.emit('changeState', JSON.stringify({ gameState: 'Pause' }))
-      // Matter.World.clear(newGameInstance.world, false);
-      // Matter.Engine.clear(newGameInstance.engine);
+      player2.emit('changeState', JSON.stringify({ gameState: 'Finished' }))
+      Matter.World.clear(newGameInstance.world, false);
+      Matter.Engine.clear(newGameInstance.engine);
       // Matter.Render.stop(newGameInstance.engine.render);
       // Matter.Runner.stop(runner);
     });
 
     player2.on('disconnect', () => {
-      player1.emit('changeState', JSON.stringify({ gameState: 'Pause' }))
+      player1.emit('changeState', JSON.stringify({ gameState: 'Finished' }))
+      Matter.World.clear(newGameInstance.world, false);
+      Matter.Engine.clear(newGameInstance.engine);
     });
 
     player1.emit('changeState', JSON.stringify({ gameState: 'Playing', playerNumber: "PlayerOne" }));
@@ -131,7 +133,7 @@ export class GameGateway {
     const startGame = () => {
       console.log("Starting The Engine")
 
-      Matter.Runner.run(newGameInstance.engine);
+      const runner = Matter.Runner.run(newGameInstance.engine);
 
       Matter.Events.on(newGameInstance.engine, 'collisionStart', (event: Matter.IEventCollision<Matter.Engine>) => {
         event.pairs.forEach((pair) => {
@@ -167,12 +169,29 @@ export class GameGateway {
             this.games[gameId].score.player2 += 1;
             player1.emit('UpdateScore', JSON.stringify(this.games[gameId].score))
             player2.emit('UpdateScore', JSON.stringify(this.games[gameId].score))
-          }
-          if (ball.position.x > this.gameWidth + 25) {
-            this.games[gameId].score.player1 += 1;
-            player1.emit('UpdateScore', JSON.stringify(this.games[gameId].score))
-            player2.emit('UpdateScore', JSON.stringify(this.games[gameId].score))
-          }
+            if (this.games[gameId].score.player2 == 7) {
+              player1.emit('changeState', JSON.stringify({ gameState: 'Finished' }));
+              player2.emit('changeState', JSON.stringify({ gameState: 'Finished' }));
+              Matter.World.clear(newGameInstance.world, false);
+              Matter.Engine.clear(newGameInstance.engine);
+              // Matter.Render.stop(newGameInstance.engine.render);
+              Matter.Runner.stop(runner);
+            }
+          } else
+            if (ball.position.x > this.gameWidth + 25) {
+              this.games[gameId].score.player1 += 1;
+              player1.emit('UpdateScore', JSON.stringify(this.games[gameId].score))
+              player2.emit('UpdateScore', JSON.stringify(this.games[gameId].score))
+              if (this.games[gameId].score.player1 == 7) {
+                player1.emit('changeState', JSON.stringify({ gameState: 'Finished' }));
+                player2.emit('changeState', JSON.stringify({ gameState: 'Finished' }));
+                Matter.World.clear(newGameInstance.world, false);
+                Matter.Engine.clear(newGameInstance.engine);
+                // Matter.Render.stop(newGameInstance.engine.render);
+                Matter.Runner.stop(runner);
+              }
+            }
+
           const newStart = this.getNewStart(this.gameWidth, this.gameHeight);
           Matter.Body.setPosition(ball, newStart.position);
           this.games[gameId].velocity = newStart.velocity;

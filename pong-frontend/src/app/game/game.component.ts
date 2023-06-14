@@ -24,15 +24,14 @@ export class GameComponent implements OnInit {
       type: Phaser.AUTO,
       width: 1232,
       height: 685,
-      parent: 'game-container', // Parent element ID
+      parent: 'game-container',
       backgroundColor: '#103960',
       physics: {
         default: 'arcade',
         arcade: {
-          // Arcade Physics configuration options...
         }
       },
-      scene: [] // Register your scene(s) here
+      scene: []
     };
 
   }
@@ -73,7 +72,10 @@ export class GameComponent implements OnInit {
           }
           case GameStateType.Queue:
           case GameStateType.Finished: {
-            this.gameScene?.scene.stop();
+            console.log("game Finished")
+            this.gameScene.win.setVisible(true);
+            this.gameScene.star.setVisible(true);
+            // this.gameScene?.scene.stop();
             break;
           }
           default: {

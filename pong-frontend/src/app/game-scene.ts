@@ -4,7 +4,6 @@ import { Store } from '@ngrx/store';
 import { SendMyPaddlePosition, StartGame, } from './game-state/game.actions'
 import { GameState, PlayerNumber } from './game-state/game.state';
 import { selectBallState, selectOpponentPaddleState, selectPlayerScore } from './game-state/game.selectors';
-import * as WebFont from 'webfontloader';
 
 
 export class GameScene extends Phaser.Scene {
@@ -17,7 +16,7 @@ export class GameScene extends Phaser.Scene {
   private myPaddle!: Phaser.Physics.Arcade.Image;
   private opponentPaddle!: Phaser.Physics.Arcade.Image;
 
-  private ball!: Phaser.Physics.Arcade.Image;
+  private ball!: Phaser.GameObjects.Image;
 
   private cursors!: Phaser.Types.Input.Keyboard.CursorKeys;
 
@@ -25,6 +24,8 @@ export class GameScene extends Phaser.Scene {
   private scoreText2!: Phaser.GameObjects.Text;
   private playerScore1!: number;
   private playerScore2!: number;
+  public star!: Phaser.GameObjects.Image;
+  public win!: Phaser.GameObjects.Image;
 
   // private winTextPlayer1!: Phaser.GameObjects.Text;
   // private winTextPlayer2!: Phaser.GameObjects.Text;
@@ -32,7 +33,6 @@ export class GameScene extends Phaser.Scene {
   private gameHeight = 0;
   private gameWidth = 0;
 
-  private fontStyle: any;
 
   constructor(private store: Store<GameState>, private playerNumber: PlayerNumber) {
     super({ key: 'game' });
@@ -46,10 +46,12 @@ export class GameScene extends Phaser.Scene {
   }
 
   preload() {
-    this.load.svg('background', 'assets/background.svg');
-    this.load.svg('paddle', '../assets/paddle.svg');
-    this.load.svg('ball', '../assets/ball.svg');
-    this.load.svg('line', '../assets/line.svg');
+    this.load.image('background', 'assets/background.png');
+    this.load.image('paddle', '../assets/paddle.png');
+    this.load.image('ball', '../assets/ball.png');
+    this.load.image('line', '../assets/line.png');
+    this.load.image('star', '../assets/star.png');
+    this.load.image('win', '../assets/win.png');
   }
 
   // private getRandomNumber(min: number, max: number) {
@@ -76,8 +78,13 @@ export class GameScene extends Phaser.Scene {
         console.log("default")
     }
 
-    this.ball = this.physics.add.image(this.gameWidth / 2, this.gameHeight / 2, 'ball');
 
+    this.ball = this.add.image(this.gameWidth / 2, this.gameHeight / 2, 'ball');
+    this.win = this.add.image(this.gameWidth / 2, this.gameHeight / 2, 'win').setVisible(false);
+    this.star = this.add.image(this.gameWidth / 2, this.gameHeight / 2, 'star').setVisible(false);
+
+
+    this.star.setDepth(1);
     // this.wallUp = this.physics.add.image(650, 15, 'wall');
     // this.wallDown = this.physics.add.image(650, this.gameHeight - 15, 'wall');
   }
@@ -98,6 +105,7 @@ export class GameScene extends Phaser.Scene {
     this.add.image(this.gameWidth / 2, this.gameHeight / 2, 'line')
     this.cameras.main.setBackgroundColor('#103960');
     this.setupGameObject();
+    this.initText();
 
     this.store.select(selectOpponentPaddleState)
       .subscribe((position) => {
@@ -118,12 +126,9 @@ export class GameScene extends Phaser.Scene {
         this.scoreText1.setText(`${this.playerScore1}`)
         this.scoreText2.setText(`${this.playerScore2}`)
       });
-    this.initText();
   }
-  // private counter = 0;
-  // readonly updateInterval = 1;
+
   override update() {
-    // console.log(this.counter)
     this.store.dispatch(SendMyPaddlePosition({ position: { x: this.myPaddle.x, y: this.myPaddle.y } }));
     if (this.myPaddle.body?.velocity) {
       if (this.cursors.up.isDown && this.myPaddle.y - this.myPaddle.height > -28) {
@@ -136,36 +141,4 @@ export class GameScene extends Phaser.Scene {
     }
   }
 
-  //   }
-  // }
-
-
-  // { // PLAYER AI
-
-  //   { // PLAYER AI
-  //     const ballVelocityX = this.ball?.body?.velocity?.x ?? 0;
-
-  //     if (ballVelocityX > 0) {
-  //       const time = (this.paddle2.x - this.ball.x + -50) / ballVelocityX;
-  //       const predictedY = this.ball.y + (this.ball.body?.velocity.y ?? 0) * time;
-
-  //       if (!(predictedY < 60 || predictedY > this.gameHeight - 60)) {
-  //         this.movePaddleToPosition(this.paddle2.x, predictedY, this.paddleSpeed);
-  //       }
-  //     } else {
-  //       this.paddle2.setVelocityY(0);
-  //     }
-  //   }
-
-  //   // if (this.paddle2.body?.velocity)
-  //   //   this.store.dispatch(MovePlayer2({ new_velocityY: this.paddle2.body?.velocity.y }))
-
-  //   // this.store.pipe(select(selectPlayer2Velocity)).subscribe((state: number) => {
-  //   //   // console.log(state)
-  //   // });
-  //   // this.paddle2PosObservable.subscribe(({ x, y }) => {
-  //   //   console.log("here")
-  //   //   console.log(x, y)
-  //   // });
-  // }
 }

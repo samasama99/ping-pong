@@ -18,8 +18,8 @@ export const gameReducer = createReducer(
   on(UpdateBall, (state, { ball }) =>
     ({ ...state, ball: ball })
   ),
-  on(UpdateScore, (state, { myScore, opponentScore }) =>
-    ({ ...state, score: { myScore, opponentScore } })
+  on(UpdateScore, (state, { score }) =>
+    ({ ...state, score })
   ),
   on(UpdateGameState, (state, { newState }) =>
     ({ ...state, state: newState })

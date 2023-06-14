@@ -15,11 +15,11 @@ export class GameGateway {
   // @WebSocketServer()
   // private server: Server;
   private queue: Array<Socket> = [];
-  private games: { [gameId: number]: { player1: Socket, player2: Socket, player1Ready: boolean, player2Ready: boolean, gameInstance: GameInstance, velocity: { x: number, y: number } } } = {};
+  private games: { [gameId: number]: { player1: Socket, player2: Socket, player1Ready: boolean, player2Ready: boolean, gameInstance: GameInstance, velocity: { x: number, y: number }, score: { player1: number, player2: number } } } = {};
   readonly gameWidth = 1232;
   readonly gameHeight = 685;
   readonly ballSize = 18 / 2;
-  readonly paddleWidth = 11;
+  readonly paddleWidth = 5;
   readonly paddleHeight = 118;
   // readonly paddle1CornerRadius = 23;
 
@@ -40,13 +40,13 @@ export class GameGateway {
     let player2: Socket = socket;
     const gameId = Date.now();
     const newGameInstance = new GameInstance();
-    this.games[gameId] = Object.assign({}, { player1, player2, player1Ready: false, player2Ready: false, gameInstance: newGameInstance, velocity: { x: 0, y: 0 } });
+    this.games[gameId] = Object.assign({}, { player1, player2, player1Ready: false, player2Ready: false, gameInstance: newGameInstance, velocity: { x: 0, y: 0 }, score: { player1: 0, player2: 0 } });
     // this.games[gameId] = { };
 
     // const ballCategory = 0x0001;
     // const paddleCategory = 0x0002;
 
-    const newStart = this.getNewStart();
+    const newStart = this.getNewStart(this.gameWidth, this.gameHeight);
     const ballPosition = newStart.position;
     this.games[gameId].velocity = newStart.velocity;
 
@@ -78,32 +78,7 @@ export class GameGateway {
     const boundsBottom = Matter.Bodies.rectangle(this.gameWidth / 2, this.gameHeight - 5, this.gameWidth, 10, { isStatic: true });
     Matter.World.add(newGameInstance.world, [paddle1, paddle2, ball, boundsTop, boundsBottom]);
 
-    ////
 
-    // // Calculate the rounded corner vertices
-    // const topLeft = { x: -this.paddleWidth / 2, y: -this.paddleHeight / 2 };
-    // const topRight = { x: this.paddleWidth / 2, y: -this.paddleHeight / 2 };
-    // const bottomRight = { x: this.paddleWidth / 2, y: this.paddleHeight / 2 };
-    // const bottomLeft = { x: -this.paddleWidth / 2, y: this.paddleHeight / 2 };
-
-    // // Modify the vertices to create rounded corners
-    // paddle1.vertices[0].x = topLeft.x + this.paddle1CornerRadius;
-    // paddle1.vertices[0].y = topLeft.y + this.paddle1CornerRadius;
-    // paddle1.vertices[1].x = topRight.x - this.paddle1CornerRadius;
-    // paddle1.vertices[1].y = topRight.y + this.paddle1CornerRadius;
-    // paddle1.vertices[2].x = bottomRight.x - this.paddle1CornerRadius;
-    // paddle1.vertices[2].y = bottomRight.y - this.paddle1CornerRadius;
-    // paddle1.vertices[3].x = bottomLeft.x + this.paddle1CornerRadius;
-    // paddle1.vertices[3].y = bottomLeft.y - this.paddle1CornerRadius;
-    // paddle2.vertices[0].x = topLeft.x + this.paddle1CornerRadius;
-    // paddle2.vertices[0].y = topLeft.y + this.paddle1CornerRadius;
-    // paddle2.vertices[1].x = topRight.x - this.paddle1CornerRadius;
-    // paddle2.vertices[1].y = topRight.y + this.paddle1CornerRadius;
-    // paddle2.vertices[2].x = bottomRight.x - this.paddle1CornerRadius;
-    // paddle2.vertices[2].y = bottomRight.y - this.paddle1CornerRadius;
-    // paddle2.vertices[3].x = bottomLeft.x + this.paddle1CornerRadius;
-    // paddle2.vertices[3].y = bottomLeft.y - this.paddle1CornerRadius;
-    // /////
 
     player1.on('sendMyPaddleState', (state) => {
       const position = JSON.parse(state);
@@ -117,9 +92,9 @@ export class GameGateway {
 
     player1.on('disconnect', () => {
       player2.emit('changeState', JSON.stringify({ gameState: 'Pause' }))
-      Matter.World.clear(newGameInstance.world, false);
-      Matter.Engine.clear(newGameInstance.engine);
-      Matter.Render.stop(newGameInstance.engine.render);
+      // Matter.World.clear(newGameInstance.world, false);
+      // Matter.Engine.clear(newGameInstance.engine);
+      // Matter.Render.stop(newGameInstance.engine.render);
       // Matter.Runner.stop(runner);
     });
 
@@ -129,16 +104,6 @@ export class GameGateway {
 
     player1.emit('changeState', JSON.stringify({ gameState: 'Playing', playerNumber: "PlayerOne" }));
     player2.emit('changeState', JSON.stringify({ gameState: 'Playing', playerNumber: "PlayerTwo" }));
-
-
-
-    // const ballIndex = newGameInstance.world.bodies.indexOf(ball);
-    // const paddle1Index = newGameInstance.world.bodies.indexOf(paddle1);
-    // const paddle2Index = newGameInstance.world.bodies.indexOf(paddle2);
-    // console.log(ballIndex, paddle1Index, paddle2Index)
-    // console.log('Bodies:', newGameInstance.world.bodies);
-    // console.log(newGameInstance.engine)
-    // console.log(newGameInstance.world);
 
 
     player1.on('playerIsReady', () => {
@@ -173,24 +138,42 @@ export class GameGateway {
           const bodyA = pair.bodyA;
           const bodyB = pair.bodyB;
 
-          if (bodyA === ball && (bodyB === boundsTop || bodyB === boundsBottom)) {
-            console.log("collision with bounds :")
-            this.games[gameId].velocity.y *= -1;
-            Matter.Body.setVelocity(ball, this.games[gameId].velocity);
-          } else {
-            console.log("collision with paddle :")
-            this.games[gameId].velocity.x *= -1;
-            Matter.Body.setVelocity(ball, this.games[gameId].velocity);
+          if (bodyA === ball && bodyB === boundsTop) {
+            // Collision with top bound
+            this.handleCollisionWithBounds(ball, boundsTop, gameId);
+          } else if (bodyA === ball && bodyB === boundsBottom) {
+            // Collision with bottom bound
+            this.handleCollisionWithBounds(ball, boundsBottom, gameId);
+          } else if (bodyA === ball && bodyB === paddle1) {
+            // Collision with paddle 1
+            this.handleCollisionWithPaddle(ball, paddle1, gameId);
+          } else if (bodyA === paddle1 && bodyB === ball) {
+            // Collision with paddle 1 (reversed order)
+            this.handleCollisionWithPaddle(ball, paddle1, gameId);
+          } else if (bodyA === ball && bodyB === paddle2) {
+            // Collision with paddle 2
+            this.handleCollisionWithPaddle(ball, paddle2, gameId);
+          } else if (bodyA === paddle2 && bodyB === ball) {
+            // Collision with paddle 2 (reversed order)
+            this.handleCollisionWithPaddle(ball, paddle2, gameId);
           }
-          console.log(bodyA.area)
-          console.log(bodyB.area)
         });
-      })
+      });
 
 
       Matter.Events.on(newGameInstance.engine, 'beforeUpdate', () => {
         if (ball.position.x < -25 || ball.position.x > this.gameWidth + 25) {
-          const newStart = this.getNewStart();
+          if (ball.position.x < -25) {
+            this.games[gameId].score.player2 += 1;
+            player1.emit('UpdateScore', JSON.stringify(this.games[gameId].score))
+            player2.emit('UpdateScore', JSON.stringify(this.games[gameId].score))
+          }
+          if (ball.position.x > this.gameWidth + 25) {
+            this.games[gameId].score.player1 += 1;
+            player1.emit('UpdateScore', JSON.stringify(this.games[gameId].score))
+            player2.emit('UpdateScore', JSON.stringify(this.games[gameId].score))
+          }
+          const newStart = this.getNewStart(this.gameWidth, this.gameHeight);
           Matter.Body.setPosition(ball, newStart.position);
           this.games[gameId].velocity = newStart.velocity;
         }
@@ -207,20 +190,35 @@ export class GameGateway {
         }));
       });
 
-      // Matter.Events.on(newGameInstance.engine, 'afterUpdate', () => {
-      //   // console.log(paddle1.position)
-      // });
-
-
     };
 
 
     console.log("Starting Game", { gameId });
   }
 
+  private handleCollisionWithBounds(ball: Matter.Body, bound: Matter.Body, gameId) {
+    // Reverse the ball's velocity along the collision axis (y-axis)
+    this.games[gameId].velocity.y *= -1;
+    Matter.Body.setVelocity(ball, this.games[gameId].velocity);
 
-  private getNewStart() {
-    const angle = Math.random() * 50 - 25; // Random angle between -25 and 25 degrees
+    // Adjust the ball's position to prevent it from penetrating the bound
+    // const correction = (ball.position.y + this.ballSize / 2) - (bound.position.y - bound.bounds.max.y);
+    // Matter.Body.translate(ball, { x: 0, y: correction });
+  }
+
+  private handleCollisionWithPaddle(ball: Matter.Body, paddle: Matter.Body, gameId) {
+    // Reverse the ball's velocity along the collision axis (x-axis)
+    this.games[gameId].velocity.x *= -1;
+    Matter.Body.setVelocity(ball, this.games[gameId].velocity);
+
+    // Adjust the ball's position to prevent it from penetrating the paddle
+    // const correction = (ball.position.x + this.ballSize / 2) - (paddle.position.x - paddle.bounds.max.x);
+    // Matter.Body.translate(ball, { x: correction, y: 0 });
+  }
+
+
+  private getNewStart(gameWidth, gameHeight) {
+    const angle = Matter.Common.random(-75, -25) + Matter.Common.random(0, 1) * 100; // Random angle between -75 and -25, or between 25 and 75 degrees
 
     const angleRad = this.degreesToRadians(angle);
 
@@ -231,26 +229,25 @@ export class GameGateway {
 
     const velocity = {
       x: directionX * velocityMagnitude,
-      y: directionY * velocityMagnitude
+      y: directionY * velocityMagnitude,
     };
 
     const position = {
-      x: this.gameWidth / 2,
-      y: this.getRandomNumberRange(0, this.gameHeight)
+      x: gameWidth / 2,
+      y: this.getRandomNumberRange(0, gameHeight),
     };
 
     return { position, velocity };
   }
 
-  private degreesToRadians(degrees: number): number {
+  private degreesToRadians(degrees) {
     return (degrees * Math.PI) / 180;
   }
 
-  private getRandomNumberRange(min: number, max: number): number {
-    return Math.random() * (max - min) + min;
+  private getRandomNumberRange(min, max) {
+    return Matter.Common.random(min, max);
   }
 }
-
 
 // class Player {
 //   playerId: number;
@@ -273,3 +270,169 @@ class GameInstance {
   }
 }
 
+// import { WebSocketGateway, SubscribeMessage } from '@nestjs/websockets';
+// import { Socket } from 'socket.io';
+// import * as Matter from 'matter-js';
+
+// @WebSocketGateway(3001, {
+//   cors: {
+//     origin: '*',
+//     credentials: true,
+//   }
+// })
+// export class GameGateway {
+//   private queue: Array<Socket> = [];
+//   private games: { [gameId: number]: { player1: Socket, player2: Socket, player1Ready: boolean, player2Ready: boolean, gameInstance: GameInstance } } = {};
+//   readonly gameWidth = 1232;
+//   readonly gameHeight = 685;
+//   readonly ballSize = 18 / 2;
+//   readonly paddleWidth = 11;
+//   readonly paddleHeight = 118;
+
+//   constructor() { }
+
+//   @SubscribeMessage('createGame')
+//   create(socket: Socket) {
+//     if (this.queue.length == 0) {
+//       this.queue.push(socket);
+//       socket.emit('changeState', JSON.stringify({ gameState: 'Queue' }));
+//       return;
+//     }
+
+//     const player1: Socket = this.queue.pop();
+//     const player2: Socket = socket;
+//     const gameId = Date.now();
+//     const newGameInstance = new GameInstance();
+//     this.games[gameId] = {
+//       player1,
+//       player2,
+//       player1Ready: false,
+//       player2Ready: false,
+//       gameInstance: newGameInstance,
+//     };
+
+//     const ball = Matter.Bodies.circle(this.gameWidth / 2, this.gameHeight / 2, this.ballSize);
+//     const paddle1 = Matter.Bodies.rectangle(27, this.gameHeight / 2, this.paddleWidth, this.paddleHeight, {
+//       isStatic: true,
+//     });
+//     const paddle2 = Matter.Bodies.rectangle(this.gameWidth - 27, this.gameHeight / 2, this.paddleWidth, this.paddleHeight, {
+//       isStatic: true,
+//     });
+//     const boundsTop = Matter.Bodies.rectangle(this.gameWidth / 2, 5, this.gameWidth, 10, { isStatic: true });
+//     const boundsBottom = Matter.Bodies.rectangle(this.gameWidth / 2, this.gameHeight - 5, this.gameWidth, 10, { isStatic: true });
+
+//     Matter.World.add(newGameInstance.world, [paddle1, paddle2, ball, boundsTop, boundsBottom]);
+
+//     player1.on('sendMyPaddleState', (state) => {
+//       const position = JSON.parse(state);
+//       Matter.Body.setPosition(paddle1, position);
+//     });
+
+//     player2.on('sendMyPaddleState', (state) => {
+//       const position = JSON.parse(state);
+//       Matter.Body.setPosition(paddle2, position);
+//     });
+
+//     player1.on('disconnect', () => {
+//       player2.emit('changeState', JSON.stringify({ gameState: 'Pause' }));
+//     });
+
+//     player2.on('disconnect', () => {
+//       player1.emit('changeState', JSON.stringify({ gameState: 'Pause' }));
+//     });
+
+//     player1.emit('changeState', JSON.stringify({ gameState: 'Playing', playerNumber: 'PlayerOne' }));
+//     player2.emit('changeState', JSON.stringify({ gameState: 'Playing', playerNumber: 'PlayerTwo' }));
+
+//     player1.on('playerIsReady', () => {
+//       this.games[gameId].player1Ready = true;
+//       if (this.games[gameId].player2Ready) {
+//         startGame();
+//       } else {
+//         player1.emit('changeState', JSON.stringify({ gameState: 'Waiting' }));
+//       }
+//     });
+
+//     player2.on('playerIsReady', () => {
+//       this.games[gameId].player2Ready = true;
+//       if (this.games[gameId].player1Ready) {
+//         startGame();
+//       } else {
+//         player2.emit('changeState', JSON.stringify({ gameState: 'Waiting' }));
+//       }
+//     });
+//     const startGame = () => {
+//       newGameInstance.runner = Matter.Runner.create();
+//       Matter.Runner.run(newGameInstance.runner, newGameInstance.engine);
+
+//       const update = () => {
+//         Matter.Engine.update(newGameInstance.engine, newGameInstance.delta);
+//       };
+
+//       setInterval(update, newGameInstance.delta);
+
+//       Matter.Events.on(newGameInstance.engine, 'collisionStart', (event) => {
+//         const pairs = event.pairs;
+//         pairs.forEach((collision) => {
+//           const { bodyA, bodyB } = collision;
+
+//           if (bodyA === ball && bodyB === paddle1) {
+//             Matter.Body.setVelocity(ball, { x: 5, y: -5 });
+//           } else if (bodyA === ball && bodyB === paddle2) {
+//             Matter.Body.setVelocity(ball, { x: -5, y: 5 });
+//           } else if (bodyA === ball && (bodyB === boundsTop || bodyB === boundsBottom)) {
+//             const ballVelocity = Matter.Vector.neg(ball.velocity);
+//             Matter.Body.setVelocity(ball, ballVelocity);
+//           }
+//         });
+//       });
+
+//       Matter.Events.on(newGameInstance.engine, 'collisionActive', (event) => {
+//         const pairs = event.pairs;
+//         pairs.forEach((collision) => {
+//           const { bodyA, bodyB } = collision;
+
+//           if (bodyA === ball && (bodyB === paddle1 || bodyB === paddle2)) {
+//             // Bounce the ball off the paddle
+//             const ballVelocity = Matter.Vector.neg(ball.velocity);
+//             Matter.Body.setVelocity(ball, ballVelocity);
+//           }
+//         });
+//       });
+
+//       Matter.Events.on(newGameInstance.engine, 'beforeUpdate', () => {
+//         if (ball.position.x < -25 || ball.position.x > this.gameWidth + 25) {
+//           const newStart = this.getNewStart(this.gameWidth, this.gameHeight);
+//           Matter.Body.setPosition(ball, newStart.position);
+//           this.games[gameId].velocity = newStart.velocity;
+//         }
+//         Matter.Body.setVelocity(ball, this.games[gameId].velocity);
+//         player1.emit('updateOpponentPaddle', JSON.stringify({ x: paddle2.position.x, y: paddle2.position.y }));
+//         player2.emit('updateOpponentPaddle', JSON.stringify({ x: paddle1.position.x, y: paddle1.position.y }));
+//         player1.emit('updateBallState', JSON.stringify({
+//           x: ball.position.x,
+//           y: ball.position.y,
+//         }));
+//         player2.emit('updateBallState', JSON.stringify({
+//           x: ball.position.x,
+//           y: ball.position.y,
+//         }));
+//       });
+
+//     };
+//   }
+// }
+
+// class GameInstance {
+//   engine: Matter.Engine;
+//   world: Matter.World;
+//   runner: Matter.Runner;
+//   delta: number;
+
+//   constructor() {
+//     this.engine = Matter.Engine.create();
+//     this.world = this.engine.world;
+//     this.delta = 1000 / 60; // 60 FPS
+//     this.engine.world.gravity.y = 0;
+//   }
+// }

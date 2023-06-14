@@ -40,9 +40,10 @@ export class GameService {
   updatePlayerScoreEvent() {
     this.socket.fromEvent<string>('UpdateScore').subscribe((payload) => {
       const score: {
-        myScore: number, opponentScore: number
+        player1: number, player2: number
       } = JSON.parse(payload);
-      this.store.dispatch(UpdateScore(score));
+      console.log("score parsed", score);
+      this.store.dispatch(UpdateScore({ score }));
     })
   }
 

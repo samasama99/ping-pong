@@ -24,7 +24,7 @@ export const UpdateBall = createAction(
 
 export const UpdateScore = createAction(
   '[Game] Update Players Score',
-  props<{ myScore: number, opponentScore: number }>()
+  props<{ score: { player1: number, player2: number } }>()
 )
 
 export const UpdateGameState = createAction(

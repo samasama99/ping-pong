@@ -14,7 +14,7 @@ export enum PlayerNumber { PlayerOne = 'PlayerOne', PlayerTwo = 'PlayerTwo', Not
 
 
 export interface GameState {
-  score: { myScore: number, opponentScore: number };
+  score: { player1: number, player2: number };
   myPaddle: { x: number, y: number };
   opponentPaddle: { x: number, y: number };
   ball: { x: number, y: number };
@@ -24,8 +24,8 @@ export interface GameState {
 
 export const initialState: GameState = {
   score: {
-    myScore: 0,
-    opponentScore: 0
+    player1: 0,
+    player2: 0
   },
 
   myPaddle: { x: 0, y: 0 },

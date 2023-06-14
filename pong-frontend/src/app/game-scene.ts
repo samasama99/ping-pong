@@ -3,7 +3,8 @@ import 'phaser3-nineslice';
 import { Store } from '@ngrx/store';
 import { SendMyPaddlePosition, StartGame, } from './game-state/game.actions'
 import { GameState, PlayerNumber } from './game-state/game.state';
-import { selectBallState, selectOpponentPaddleState } from './game-state/game.selectors';
+import { selectBallState, selectOpponentPaddleState, selectPlayerScore } from './game-state/game.selectors';
+import * as WebFont from 'webfontloader';
 
 
 export class GameScene extends Phaser.Scene {
@@ -20,14 +21,18 @@ export class GameScene extends Phaser.Scene {
 
   private cursors!: Phaser.Types.Input.Keyboard.CursorKeys;
 
-  // private scoreText1!: Phaser.GameObjects.Text;
-  // private scoreText2!: Phaser.GameObjects.Text;
+  private scoreText1!: Phaser.GameObjects.Text;
+  private scoreText2!: Phaser.GameObjects.Text;
+  private playerScore1!: number;
+  private playerScore2!: number;
 
   // private winTextPlayer1!: Phaser.GameObjects.Text;
   // private winTextPlayer2!: Phaser.GameObjects.Text;
 
   private gameHeight = 0;
   private gameWidth = 0;
+
+  private fontStyle: any;
 
   constructor(private store: Store<GameState>, private playerNumber: PlayerNumber) {
     super({ key: 'game' });
@@ -77,27 +82,14 @@ export class GameScene extends Phaser.Scene {
     // this.wallDown = this.physics.add.image(650, this.gameHeight - 15, 'wall');
   }
 
-  // initText() {
-  //   this.winTextPlayer1 = this.add.text(400, 150, '', { fontSize: '128px', fill: '#fff' } as Phaser.Types.GameObjects.Text.TextStyle);
-  //   this.winTextPlayer2 = this.add.text(900, 150, '', { fontSize: '128px', fill: '#fff' } as Phaser.Types.GameObjects.Text.TextStyle);
-  //   this.scoreText1 = this.add.text(475, 50, '0', { fontSize: '128px', fill: '#fff' } as Phaser.Types.GameObjects.Text.TextStyle);
-  //   this.scoreText2 = this.add.text(this.gameWidth - 475, 50, '0', { fontSize: '128px', fill: '#fff' } as Phaser.Types.GameObjects.Text.TextStyle).setOrigin(1, 0);
-  // }
-  setupGamePhysics() {
-    this.physics.world.enable([this.myPaddle, this.opponentPaddle, this.ball]);
-
-    this.myPaddle.setCollideWorldBounds(true);
-    this.myPaddle.setImmovable(true);
-
-    this.opponentPaddle.setCollideWorldBounds(true);
-    this.opponentPaddle.setImmovable(true);
-
-    this.physics.add.collider(this.ball, [this.myPaddle, this.opponentPaddle], undefined, undefined, this);
-
-    this.ball.setBounce(1);
-    this.ball.setPushable(false);
-    this.myPaddle.setCollideWorldBounds(true);
+  initText() {
+    // this.winTextPlayer1 = this.add.text(400, 150, '', { fontSize: '128px', fill: '#fff' } as Phaser.Types.GameObjects.Text.TextStyle);
+    // this.winTextPlayer2 = this.add.text(900, 150, '', { fontSize: '128px', fill: '#fff' } as Phaser.Types.GameObjects.Text.TextStyle);
+    //
+    this.scoreText1 = this.add.text(555, 20, '0', { fontSize: '40px', fill: '#fff', fontFamily: 'Montserrat' } as Phaser.Types.GameObjects.Text.TextStyle);
+    this.scoreText2 = this.add.text(this.gameWidth - 555, 20, '0', { fontSize: '40px', fill: '#fff', fontFamily: 'Montserrat' } as Phaser.Types.GameObjects.Text.TextStyle).setOrigin(1, 0);
   }
+
   create() {
     this.gameHeight = this.sys.canvas.height;
     this.gameWidth = this.sys.canvas.width;
@@ -118,7 +110,15 @@ export class GameScene extends Phaser.Scene {
       .subscribe(ballState => {
         this.ball.setPosition(ballState.x, ballState.y);
       });
-    // this.initText();
+
+    this.store.select(selectPlayerScore)
+      .subscribe(score => {
+        this.playerScore1 = score.player1;
+        this.playerScore2 = score.player2;
+        this.scoreText1.setText(`${this.playerScore1}`)
+        this.scoreText2.setText(`${this.playerScore2}`)
+      });
+    this.initText();
   }
   // private counter = 0;
   // readonly updateInterval = 1;
@@ -126,9 +126,9 @@ export class GameScene extends Phaser.Scene {
     // console.log(this.counter)
     this.store.dispatch(SendMyPaddlePosition({ position: { x: this.myPaddle.x, y: this.myPaddle.y } }));
     if (this.myPaddle.body?.velocity) {
-      if (this.cursors.up.isDown) {
+      if (this.cursors.up.isDown && this.myPaddle.y - this.myPaddle.height > -28) {
         this.myPaddle.setVelocityY(-this.paddleSpeed);
-      } else if (this.cursors.down.isDown) {
+      } else if (this.cursors.down.isDown && this.myPaddle.y + this.myPaddle.height < this.gameHeight + 28) {
         this.myPaddle.setVelocityY(this.paddleSpeed);
       } else if (this.myPaddle.body.velocity.y != 0) {
         this.myPaddle.setVelocityY(0);

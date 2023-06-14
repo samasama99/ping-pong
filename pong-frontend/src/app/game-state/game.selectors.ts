@@ -13,7 +13,7 @@ export const selectGameState = createSelector(
 
 export const selectPlayerScore = createSelector(
   selectGame,
-  (state) => state.game.player1.score
+  (state) => state.game.score
 );
 
 export const selectPlayerNumber = createSelector(

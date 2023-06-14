@@ -10,7 +10,7 @@ import { StoreDevtoolsModule } from '@ngrx/store-devtools';
 import { SocketIoConfig, SocketIoModule } from 'ngx-socket-io';
 import { GameEffects } from './game-state/game.effects';
 
-const config: SocketIoConfig = { url: 'http://10.12.5.13:3001' };
+const config: SocketIoConfig = { url: 'http://10.12.9.9:3001' };
 
 // const config: SocketIoConfig = { url: 'ws://localhost:3004', options: { transports: ['websocket'] } };
 
@@ -24,7 +24,7 @@ const config: SocketIoConfig = { url: 'http://10.12.5.13:3001' };
     // StoreModule.forRoot({}, {}),
     EffectsModule.forRoot([GameEffects]),
     StoreModule.forRoot({ game: reducer }),
-    StoreDevtoolsModule.instrument({ maxAge: 500, logOnly: !isDevMode() }),
+    StoreDevtoolsModule.instrument({ maxAge: 25, logOnly: !isDevMode() }),
     SocketIoModule.forRoot(config)
   ],
   providers: [],

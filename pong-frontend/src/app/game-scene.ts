@@ -3,8 +3,7 @@ import 'phaser3-nineslice';
 import { Store } from '@ngrx/store';
 import { SendMyPaddlePosition, StartGame, } from './game-state/game.actions'
 import { GameState, PlayerNumber } from './game-state/game.state';
-import { Game } from "phaser";
-import { selectBallState, selectGameState, selectOpponentPaddleState, selectPlayerNumber } from './game-state/game.selectors';
+import { selectBallState, selectOpponentPaddleState } from './game-state/game.selectors';
 
 
 export class GameScene extends Phaser.Scene {
@@ -45,7 +44,7 @@ export class GameScene extends Phaser.Scene {
     this.load.svg('background', 'assets/background.svg');
     this.load.svg('paddle', '../assets/paddle.svg');
     this.load.svg('ball', '../assets/ball.svg');
-    this.load.svg('wall', '../assets/wall.svg');
+    this.load.svg('line', '../assets/line.svg');
   }
 
   // private getRandomNumber(min: number, max: number) {
@@ -64,8 +63,8 @@ export class GameScene extends Phaser.Scene {
       case PlayerNumber.PlayerTwo:
         {
           console.log("init control PlayerTwo")
-          this.opponentPaddle = this.physics.add.image(27, this.gameHeight / 2, 'paddle');
           this.myPaddle = this.physics.add.image(this.gameWidth - 27, this.gameHeight / 2, 'paddle');
+          this.opponentPaddle = this.physics.add.image(27, this.gameHeight / 2, 'paddle');
           break;
         }
       default:
@@ -84,19 +83,35 @@ export class GameScene extends Phaser.Scene {
   //   this.scoreText1 = this.add.text(475, 50, '0', { fontSize: '128px', fill: '#fff' } as Phaser.Types.GameObjects.Text.TextStyle);
   //   this.scoreText2 = this.add.text(this.gameWidth - 475, 50, '0', { fontSize: '128px', fill: '#fff' } as Phaser.Types.GameObjects.Text.TextStyle).setOrigin(1, 0);
   // }
+  setupGamePhysics() {
+    this.physics.world.enable([this.myPaddle, this.opponentPaddle, this.ball]);
 
+    this.myPaddle.setCollideWorldBounds(true);
+    this.myPaddle.setImmovable(true);
+
+    this.opponentPaddle.setCollideWorldBounds(true);
+    this.opponentPaddle.setImmovable(true);
+
+    this.physics.add.collider(this.ball, [this.myPaddle, this.opponentPaddle], undefined, undefined, this);
+
+    this.ball.setBounce(1);
+    this.ball.setPushable(false);
+    this.myPaddle.setCollideWorldBounds(true);
+  }
   create() {
     this.gameHeight = this.sys.canvas.height;
     this.gameWidth = this.sys.canvas.width;
     this.cursors = this.input?.keyboard?.createCursorKeys()!;
     this.add.image(0, 0, 'background').setOrigin(0, 0);
+    this.add.image(this.gameWidth / 2, this.gameHeight / 2, 'line')
     this.cameras.main.setBackgroundColor('#103960');
     this.setupGameObject();
 
     this.store.select(selectOpponentPaddleState)
-      .subscribe((paddle) => {
-        console.log(paddle)
-        this.opponentPaddle.setY(paddle);
+      .subscribe((position) => {
+        // console.log(position)
+        this.opponentPaddle.setY(position.x);
+        this.opponentPaddle.setY(position.y);
       });
 
     this.store.select(selectBallState)
@@ -109,18 +124,14 @@ export class GameScene extends Phaser.Scene {
   // readonly updateInterval = 1;
   override update() {
     // console.log(this.counter)
+    this.store.dispatch(SendMyPaddlePosition({ position: { x: this.myPaddle.x, y: this.myPaddle.y } }));
     if (this.myPaddle.body?.velocity) {
       if (this.cursors.up.isDown) {
         this.myPaddle.setVelocityY(-this.paddleSpeed);
-        this.store.dispatch(SendMyPaddlePosition({ myPaddle: this.myPaddle.y }));
       } else if (this.cursors.down.isDown) {
         this.myPaddle.setVelocityY(this.paddleSpeed);
-        this.store.dispatch(SendMyPaddlePosition({ myPaddle: this.myPaddle.y }));
-      } else {
-        if (this.myPaddle.body.velocity.y != 0) {
-          this.myPaddle.setVelocityY(0);
-          this.store.dispatch(SendMyPaddlePosition({ myPaddle: this.myPaddle.y }));
-        }
+      } else if (this.myPaddle.body.velocity.y != 0) {
+        this.myPaddle.setVelocityY(0);
       }
     }
   }

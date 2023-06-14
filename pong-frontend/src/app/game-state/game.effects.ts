@@ -15,7 +15,7 @@ export class GameEffects {
     this.actions$.pipe(
       ofType(SendMyPaddlePosition),
       tap((action) => {
-        this.gameService.sendMyPaddlePosition(action.myPaddle);
+        this.gameService.sendMyPaddlePosition(action.position);
       })
     ),
     { dispatch: false }

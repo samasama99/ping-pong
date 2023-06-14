@@ -7,13 +7,13 @@ export type vector = { x: number, y: number };
 export const gameReducer = createReducer(
   initialState,
   on(CreateGame, state => ({ ...state })),
-  on(SendMyPaddlePosition, (state, { myPaddle }) => ({
+  on(SendMyPaddlePosition, (state, { position }) => ({
     ...state,
-    myPaddle
+    myPaddle: { x: position.x, y: position.y }
   })),
-  on(UpdateOpponentPosition, (state, { opponentPaddle }) => ({
+  on(UpdateOpponentPosition, (state, { position }) => ({
     ...state,
-    opponentPaddle
+    opponentPaddle: { x: position.x, y: position.y }
   })),
   on(UpdateBall, (state, { ball }) =>
     ({ ...state, ball: ball })

@@ -18,9 +18,10 @@ export class GameGateway {
   private games: { [gameId: number]: { player1: Socket, player2: Socket, player1Ready: boolean, player2Ready: boolean, gameInstance: GameInstance, velocity: { x: number, y: number } } } = {};
   readonly gameWidth = 1232;
   readonly gameHeight = 685;
-  readonly ballSize = 18;
-  readonly paddleWidth = 12;
-  readonly paddleHeight = 119;
+  readonly ballSize = 18 / 2;
+  readonly paddleWidth = 11;
+  readonly paddleHeight = 118;
+  // readonly paddle1CornerRadius = 23;
 
   // const activeGameInstances: GameInstance[] = [];
 
@@ -49,15 +50,23 @@ export class GameGateway {
     const ballPosition = newStart.position;
     this.games[gameId].velocity = newStart.velocity;
 
-    const ball = Matter.Bodies.rectangle(this.gameWidth / 2, this.gameHeight / 2, this.ballSize, this.ballSize, {
-    });
+    const ball = Matter.Bodies.circle(this.gameWidth / 2, this.gameHeight / 2, this.ballSize);
 
     Matter.Body.setPosition(ball, ballPosition);
     Matter.Body.setVelocity(ball, this.games[gameId].velocity);
 
-    const paddle1_position = { x: 50.5, y: this.gameHeight / 2 };
-    const paddle2_position = { x: 1195.5, y: this.gameHeight / 2 };
-    const paddle1 = Matter.Bodies.rectangle(paddle1_position.x, paddle1_position.y, this.paddleWidth, this.gameHeight, {
+    const paddle1_position = { x: 27, y: this.gameHeight / 2 };
+    const paddle2_position = { x: this.gameWidth - 27, y: this.gameHeight / 2 };
+    // const paddle1Vertices = Matter.Vertices.fromPath('0 0 0 118 7 118 7 0', null);
+    // const paddle2Vertices = Matter.Vertices.fromPath('0 0 0 118 -7 118 -7 0', null);
+    // const paddle1 = Matter.Bodies.fromVertices(paddle1_position.x, paddle1_position.y, [paddle1Vertices], {
+    //   isStatic: true,
+    // });
+
+    // const paddle2 = Matter.Bodies.fromVertices(paddle2_position.x, paddle2_position.y, [paddle2Vertices], {
+    //   isStatic: true
+    // });
+    const paddle1 = Matter.Bodies.rectangle(paddle1_position.x, paddle1_position.y, this.paddleWidth, this.paddleHeight, {
       isStatic: true
     });
 
@@ -65,39 +74,53 @@ export class GameGateway {
       isStatic: true
     });
 
-    const boundsTop = Matter.Bodies.rectangle(this.gameWidth / 2, -10, this.gameWidth, 10, { isStatic: true });
-    const boundsBottom = Matter.Bodies.rectangle(this.gameWidth / 2, this.gameHeight + 10, this.gameWidth, 10, { isStatic: true });
+    const boundsTop = Matter.Bodies.rectangle(this.gameWidth / 2, 5, this.gameWidth, 10, { isStatic: true });
+    const boundsBottom = Matter.Bodies.rectangle(this.gameWidth / 2, this.gameHeight - 5, this.gameWidth, 10, { isStatic: true });
     Matter.World.add(newGameInstance.world, [paddle1, paddle2, ball, boundsTop, boundsBottom]);
 
     ////
 
-    // ball.restitution = 1; // Set high restitution for bouncing
-    // paddle1.restitution = 0.5;
-    // paddle2.restitution = 0.5;
-    // ball.friction = 0; // No friction for the ball
-    // paddle1.friction = 0.2;
-    // paddle2.friction = 0.2;
-    // ball.density = 0.01;
-    // paddle1.density = 0.1;
-    // paddle2.density = 0.1;
-    /////
+    // // Calculate the rounded corner vertices
+    // const topLeft = { x: -this.paddleWidth / 2, y: -this.paddleHeight / 2 };
+    // const topRight = { x: this.paddleWidth / 2, y: -this.paddleHeight / 2 };
+    // const bottomRight = { x: this.paddleWidth / 2, y: this.paddleHeight / 2 };
+    // const bottomLeft = { x: -this.paddleWidth / 2, y: this.paddleHeight / 2 };
+
+    // // Modify the vertices to create rounded corners
+    // paddle1.vertices[0].x = topLeft.x + this.paddle1CornerRadius;
+    // paddle1.vertices[0].y = topLeft.y + this.paddle1CornerRadius;
+    // paddle1.vertices[1].x = topRight.x - this.paddle1CornerRadius;
+    // paddle1.vertices[1].y = topRight.y + this.paddle1CornerRadius;
+    // paddle1.vertices[2].x = bottomRight.x - this.paddle1CornerRadius;
+    // paddle1.vertices[2].y = bottomRight.y - this.paddle1CornerRadius;
+    // paddle1.vertices[3].x = bottomLeft.x + this.paddle1CornerRadius;
+    // paddle1.vertices[3].y = bottomLeft.y - this.paddle1CornerRadius;
+    // paddle2.vertices[0].x = topLeft.x + this.paddle1CornerRadius;
+    // paddle2.vertices[0].y = topLeft.y + this.paddle1CornerRadius;
+    // paddle2.vertices[1].x = topRight.x - this.paddle1CornerRadius;
+    // paddle2.vertices[1].y = topRight.y + this.paddle1CornerRadius;
+    // paddle2.vertices[2].x = bottomRight.x - this.paddle1CornerRadius;
+    // paddle2.vertices[2].y = bottomRight.y - this.paddle1CornerRadius;
+    // paddle2.vertices[3].x = bottomLeft.x + this.paddle1CornerRadius;
+    // paddle2.vertices[3].y = bottomLeft.y - this.paddle1CornerRadius;
+    // /////
 
     player1.on('sendMyPaddleState', (state) => {
-      const paddle = JSON.parse(state);
-      const paddle1_position = { x: 27, y: paddle.myPaddle };
-      Matter.Body.setPosition(paddle1, paddle1_position);
-      player2.emit('updateOpponentPaddle', state);
+      const position = JSON.parse(state);
+      Matter.Body.setPosition(paddle1, position);
     })
 
     player2.on('sendMyPaddleState', (state) => {
-      const paddle = JSON.parse(state);
-      const paddle2_position = { x: this.gameWidth - 27, y: paddle.myPaddle };
-      Matter.Body.setPosition(paddle2, paddle2_position);
-      player1.emit('updateOpponentPaddle', state);
+      const position = JSON.parse(state);
+      Matter.Body.setPosition(paddle2, position);
     })
 
     player1.on('disconnect', () => {
       player2.emit('changeState', JSON.stringify({ gameState: 'Pause' }))
+      Matter.World.clear(newGameInstance.world, false);
+      Matter.Engine.clear(newGameInstance.engine);
+      Matter.Render.stop(newGameInstance.engine.render);
+      // Matter.Runner.stop(runner);
     });
 
     player2.on('disconnect', () => {
@@ -144,18 +167,23 @@ export class GameGateway {
       console.log("Starting The Engine")
 
       Matter.Runner.run(newGameInstance.engine);
+
       Matter.Events.on(newGameInstance.engine, 'collisionStart', (event: Matter.IEventCollision<Matter.Engine>) => {
         event.pairs.forEach((pair) => {
           const bodyA = pair.bodyA;
           const bodyB = pair.bodyB;
 
           if (bodyA === ball && (bodyB === boundsTop || bodyB === boundsBottom)) {
+            console.log("collision with bounds :")
             this.games[gameId].velocity.y *= -1;
             Matter.Body.setVelocity(ball, this.games[gameId].velocity);
           } else {
+            console.log("collision with paddle :")
             this.games[gameId].velocity.x *= -1;
             Matter.Body.setVelocity(ball, this.games[gameId].velocity);
           }
+          console.log(bodyA.area)
+          console.log(bodyB.area)
         });
       })
 
@@ -166,10 +194,9 @@ export class GameGateway {
           Matter.Body.setPosition(ball, newStart.position);
           this.games[gameId].velocity = newStart.velocity;
         }
-      });
-
-      Matter.Events.on(newGameInstance.engine, 'afterUpdate', () => {
         Matter.Body.setVelocity(ball, this.games[gameId].velocity);
+        player1.emit('updateOpponentPaddle', JSON.stringify({ x: paddle2.position.x, y: paddle2.position.y }));
+        player2.emit('updateOpponentPaddle', JSON.stringify({ x: paddle1.position.x, y: paddle1.position.y }));
         player1.emit('updateBallState', JSON.stringify({
           x: ball.position.x,
           y: ball.position.y,
@@ -180,6 +207,10 @@ export class GameGateway {
         }));
       });
 
+      // Matter.Events.on(newGameInstance.engine, 'afterUpdate', () => {
+      //   // console.log(paddle1.position)
+      // });
+
 
     };
 
@@ -187,24 +218,25 @@ export class GameGateway {
     console.log("Starting Game", { gameId });
   }
 
+
   private getNewStart() {
-    // console.log("resetBall");
-    const sign = Math.random() < 0.5 ? -1 : 1;
-    const angle = Math.floor(Math.random() * (sign * 55 - sign * 25 + 1) + sign * 25);
+    const angle = Math.random() * 50 - 25; // Random angle between -25 and 25 degrees
 
     const angleRad = this.degreesToRadians(angle);
 
     const directionX = Math.cos(angleRad);
     const directionY = Math.sin(angleRad);
 
-    const length = Math.sqrt(directionX ** 2 + directionY ** 2);
-    const normalizedDirectionX = directionX / length;
-    const normalizedDirectionY = directionY / length;
+    const velocityMagnitude = this.getRandomNumberRange(10, 15); // Random velocity magnitude between 10 and 15
 
-    const velocity = { x: normalizedDirectionX * 12, y: normalizedDirectionY * 12 };
+    const velocity = {
+      x: directionX * velocityMagnitude,
+      y: directionY * velocityMagnitude
+    };
 
     const position = {
-      x: this.gameWidth / 2, y: this.getRandomNumber(0, this.gameHeight)
+      x: this.gameWidth / 2,
+      y: this.getRandomNumberRange(0, this.gameHeight)
     };
 
     return { position, velocity };
@@ -214,10 +246,11 @@ export class GameGateway {
     return (degrees * Math.PI) / 180;
   }
 
-  private getRandomNumber(min: number, max: number): number {
-    return Math.floor(Math.random() * (max - min + 1) + min);
+  private getRandomNumberRange(min: number, max: number): number {
+    return Math.random() * (max - min) + min;
   }
 }
+
 
 // class Player {
 //   playerId: number;

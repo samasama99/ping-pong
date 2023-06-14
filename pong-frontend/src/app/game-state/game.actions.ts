@@ -7,12 +7,12 @@ export const StartGame = createAction('[Game] Start Game');
 
 export const SendMyPaddlePosition = createAction(
   '[Game] Update My Paddle',
-  props<{ myPaddle: number }>()
+  props<{ position: { x: number, y: number } }>()
 );
 
 export const UpdateOpponentPosition = createAction(
   '[Game] Update Opponent Paddle',
-  props<{ opponentPaddle: number }>()
+  props<{ position: { x: number, y: number } }>()
 );
 
 export const UpdateBall = createAction(

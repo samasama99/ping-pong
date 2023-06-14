@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { Store } from '@ngrx/store';
 import { Socket } from 'ngx-socket-io';
-import { SetPlayerNumber, UpdateBall, UpdateGameState, UpdateOpponentPosition, UpdateScore } from './game-state/game.actions';
+import { UpdateBall, UpdateOpponentPosition, UpdateScore } from './game-state/game.actions';
 
 
 @Injectable({
@@ -15,16 +15,15 @@ export class GameService {
     return this.socket.fromEvent<string>('changeState')
   }
 
-  sendMyPaddlePosition(myPaddle: number) {
-    this.socket.emit('sendMyPaddleState', JSON.stringify({ myPaddle }));
+  sendMyPaddlePosition(position: { x: number, y: number }) {
+    this.socket.emit('sendMyPaddleState', JSON.stringify({ x: position.x, y: position.y }));
   }
 
   updateOpponentPaddle() {
     this.socket.fromEvent<string>('updateOpponentPaddle').subscribe((state) => {
-      const _state = JSON.parse(state);
-      const opponentPaddle = _state.myPaddle;
-      console.log("parse", opponentPaddle)
-      this.store.dispatch(UpdateOpponentPosition({ opponentPaddle }))
+      const position = JSON.parse(state);
+      // console.log("parse", position)
+      this.store.dispatch(UpdateOpponentPosition({ position }))
     })
   }
 
@@ -50,10 +49,5 @@ export class GameService {
   playerIsReady() {
     this.socket.emit('playerIsReady');
   }
-
-
-  // sendBallState(position: { x: number; y: number; }, velocity: { x: number; y: number; }) {
-  //   this.socket.emit('sendBallState', JSON.stringify({ position: { x: position.x, y: position.y }, velocity: { x: velocity.x, y: velocity.y } }));
-  // }
 
 }

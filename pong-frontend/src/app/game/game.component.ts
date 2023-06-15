@@ -31,6 +31,45 @@ export class GameComponent implements OnInit {
         arcade: {
         }
       },
+      scale: {
+        mode: Phaser.Scale.WIDTH_CONTROLS_HEIGHT,
+        autoCenter: Phaser.Scale.CENTER_BOTH,
+        // parent: 'game-container',
+        width: 1232,
+        height: 685
+      },
+      // scale: {
+      //   // Or set parent divId here
+      //   // parent: 'game-container',
+
+      //   // mode: Phaser.Scale.FIT,
+      //   // autoCenter: Phaser.Scale.CENTER_BOTH,
+
+      //   // Or put game size here
+      //   // width: 1024,
+      //   // height: 768,
+
+      //   // Minimum size
+      //   // min: {
+      //   //   width: 1232 / 5,
+      //   //   height: 685 / 5
+      //   // },
+      //   // Or set minimum size like these
+      //   // minWidth: 800,
+      //   // minHeight: 600,
+
+      //   // Maximum size
+      //   // max: {
+      //   //   width: 1232,
+      //   //   height: 685
+      //   // },
+      //   // Or set maximum size like these
+      //   // maxWidth: 1600,
+      //   // maxHeight: 1200,
+
+      //   zoom: 1,  // Size of game canvas = game size * zoom
+      // },
+      // // autoRound: false,
       scene: []
     };
 
@@ -42,7 +81,7 @@ export class GameComponent implements OnInit {
     this.gameService.createGame()
       .subscribe(payload => {
         console.log({ payload });
-        const state: { gameState: GameStateType, playerNumber: PlayerNumber } = JSON.parse(payload);
+        const state: { gameState: GameStateType, playerNumber: PlayerNumber, isWin: boolean } = JSON.parse(payload);
         if (state.gameState) {
           this.store.dispatch(UpdateGameState({ newState: state.gameState }));
         }
@@ -77,7 +116,7 @@ export class GameComponent implements OnInit {
               this.gameScene.win.setVisible(true);
               // this.gameScene.star.setVisible(true);
 
-              this.gameScene.winText.setText("WIN");
+              this.gameScene.winText.setText(state.isWin ? "WON" : "LOST");
               // this.gameScene?.scene.stop();
             } else {
               console.log("ABORT")

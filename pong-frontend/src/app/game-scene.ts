@@ -95,7 +95,7 @@ export class GameScene extends Phaser.Scene {
     // this.winTextPlayer1 = this.add.text(400, 150, '', { fontSize: '128px', fill: '#fff' } as Phaser.Types.GameObjects.Text.TextStyle);
     // this.winTextPlayer2 = this.add.text(900, 150, '', { fontSize: '128px', fill: '#fff' } as Phaser.Types.GameObjects.Text.TextStyle);
     //
-    this.winText = this.add.text(this.gameWidth / 2 - 170, this.gameHeight / 2 - 100, '', { fontSize: '169px', fill: '#fff', fontFamily: 'Montserrat' } as Phaser.Types.GameObjects.Text.TextStyle);
+    this.winText = this.add.text(this.gameWidth / 2 - 225, this.gameHeight / 2 - 100, '', { fontSize: '169px', fill: '#fff', fontFamily: 'Montserrat' } as Phaser.Types.GameObjects.Text.TextStyle);
     this.scoreText1 = this.add.text(555, 20, '0', { fontSize: '40px', fill: '#fff', fontFamily: 'Montserrat' } as Phaser.Types.GameObjects.Text.TextStyle);
     this.scoreText2 = this.add.text(this.gameWidth - 555, 20, '0', { fontSize: '40px', fill: '#fff', fontFamily: 'Montserrat' } as Phaser.Types.GameObjects.Text.TextStyle).setOrigin(1, 0);
   }
@@ -134,6 +134,10 @@ export class GameScene extends Phaser.Scene {
   }
 
   override update() {
+    // if (window.innerWidth < this.gameWidth + 100) {
+    //   this.gameHeight = this.sys.canvas.height;
+    //   this.gameWidth = this.sys.canvas.width;
+    // }
     this.store.dispatch(SendMyPaddlePosition({ position: { x: this.myPaddle.x, y: this.myPaddle.y } }));
     if (this.myPaddle.body?.velocity) {
       if (this.cursors.up.isDown && this.myPaddle.y - this.myPaddle.height > -29.5) {

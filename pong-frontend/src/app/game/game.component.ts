@@ -34,45 +34,9 @@ export class GameComponent implements OnInit {
       scale: {
         mode: Phaser.Scale.WIDTH_CONTROLS_HEIGHT,
         autoCenter: Phaser.Scale.CENTER_BOTH,
-        // parent: 'game-container',
-        width: 1232,
-        height: 685
       },
-      // scale: {
-      //   // Or set parent divId here
-      //   // parent: 'game-container',
-
-      //   // mode: Phaser.Scale.FIT,
-      //   // autoCenter: Phaser.Scale.CENTER_BOTH,
-
-      //   // Or put game size here
-      //   // width: 1024,
-      //   // height: 768,
-
-      //   // Minimum size
-      //   // min: {
-      //   //   width: 1232 / 5,
-      //   //   height: 685 / 5
-      //   // },
-      //   // Or set minimum size like these
-      //   // minWidth: 800,
-      //   // minHeight: 600,
-
-      //   // Maximum size
-      //   // max: {
-      //   //   width: 1232,
-      //   //   height: 685
-      //   // },
-      //   // Or set maximum size like these
-      //   // maxWidth: 1600,
-      //   // maxHeight: 1200,
-
-      //   zoom: 1,  // Size of game canvas = game size * zoom
-      // },
-      // // autoRound: false,
       scene: []
     };
-
   }
 
   ngOnInit() {

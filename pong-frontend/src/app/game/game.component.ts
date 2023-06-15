@@ -72,12 +72,16 @@ export class GameComponent implements OnInit {
           }
           case GameStateType.Queue:
           case GameStateType.Finished: {
-            console.log("game Finished")
-            this.gameScene.win.setVisible(true);
-            // this.gameScene.star.setVisible(true);
+            if (this.gameScene) {
+              console.log("game Finished")
+              this.gameScene.win.setVisible(true);
+              // this.gameScene.star.setVisible(true);
 
-            this.gameScene.winText.setText("WIN");
-            // this.gameScene?.scene.stop();
+              this.gameScene.winText.setText("WIN");
+              // this.gameScene?.scene.stop();
+            } else {
+              console.log("ABORT")
+            }
             break;
           }
           default: {

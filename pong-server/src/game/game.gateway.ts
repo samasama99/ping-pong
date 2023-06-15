@@ -2,6 +2,7 @@ import { WebSocketGateway, SubscribeMessage } from '@nestjs/websockets';
 import { Socket } from 'socket.io';
 // import { Engine, World, Bodies } from 'matter-js';
 import * as Matter from 'matter-js'
+import { interval } from 'rxjs';
 
 @WebSocketGateway(3001, {
   cors: {
@@ -15,12 +16,12 @@ export class GameGateway {
   // @WebSocketServer()
   // private server: Server;
   private queue: Array<Socket> = [];
-  private games: { [gameId: number]: { player1: Socket, player2: Socket, player1Ready: boolean, player2Ready: boolean, gameInstance: GameInstance, velocity: { x: number, y: number }, score: { player1: number, player2: number } } } = {};
+  private games: { [gameId: number]: { player1: Socket, player2: Socket, player1Ready: boolean, player2Ready: boolean, gameInstance: GameInstance, velocity: { x: number, y: number }, score: { player1: number, player2: number }, speed } } = {};
   readonly gameWidth = 1232;
   readonly gameHeight = 685;
-  readonly ballSize = 18 / 2;
-  readonly paddleWidth = 5;
-  readonly paddleHeight = 118;
+  readonly ballRadius = 18 / 2;
+  readonly paddleWidth = 12;
+  readonly paddleHeight = 119;
   // readonly paddle1CornerRadius = 23;
 
   // const activeGameInstances: GameInstance[] = [];
@@ -40,17 +41,17 @@ export class GameGateway {
     let player2: Socket = socket;
     const gameId = Date.now();
     const newGameInstance = new GameInstance();
-    this.games[gameId] = Object.assign({}, { player1, player2, player1Ready: false, player2Ready: false, gameInstance: newGameInstance, velocity: { x: 0, y: 0 }, score: { player1: 0, player2: 0 } });
+    this.games[gameId] = Object.assign({}, { player1, player2, player1Ready: false, player2Ready: false, gameInstance: newGameInstance, velocity: { x: 0, y: 0 }, score: { player1: 0, player2: 0 }, speed: 8.5 });
     // this.games[gameId] = { };
 
     // const ballCategory = 0x0001;
     // const paddleCategory = 0x0002;
 
-    const newStart = this.getNewStart(this.gameWidth, this.gameHeight);
+    const newStart = this.getNewStart(this.gameWidth, this.gameHeight, gameId);
     const ballPosition = newStart.position;
     this.games[gameId].velocity = newStart.velocity;
 
-    const ball = Matter.Bodies.circle(this.gameWidth / 2, this.gameHeight / 2, this.ballSize);
+    const ball = Matter.Bodies.circle(this.gameWidth / 2, this.gameHeight / 2, this.ballRadius);
 
     Matter.Body.setPosition(ball, ballPosition);
     Matter.Body.setVelocity(ball, this.games[gameId].velocity);
@@ -74,20 +75,22 @@ export class GameGateway {
       isStatic: true
     });
 
-    const boundsTop = Matter.Bodies.rectangle(this.gameWidth / 2, 5, this.gameWidth, 10, { isStatic: true });
-    const boundsBottom = Matter.Bodies.rectangle(this.gameWidth / 2, this.gameHeight - 5, this.gameWidth, 10, { isStatic: true });
-    Matter.World.add(newGameInstance.world, [paddle1, paddle2, ball, boundsTop, boundsBottom]);
+    // const boundsTop = Matter.Bodies.rectangle(this.gameWidth / 2, 5, this.gameWidth, 10, { isStatic: true });
+    // const boundsBottom = Matter.Bodies.rectangle(this.gameWidth / 2, this.gameHeight - 5, this.gameWidth, 10, { isStatic: true });
+    Matter.World.add(newGameInstance.world, [paddle1, paddle2, ball]);
 
 
 
     player1.on('sendMyPaddleState', (state) => {
       const position = JSON.parse(state);
       Matter.Body.setPosition(paddle1, position);
+      player2.emit('updateOpponentPaddle', JSON.stringify({ x: paddle1.position.x, y: paddle1.position.y }));
     })
 
     player2.on('sendMyPaddleState', (state) => {
       const position = JSON.parse(state);
       Matter.Body.setPosition(paddle2, position);
+      player1.emit('updateOpponentPaddle', JSON.stringify({ x: paddle2.position.x, y: paddle2.position.y }));
     })
 
     player1.on('disconnect', () => {
@@ -135,41 +138,13 @@ export class GameGateway {
 
       const runner = Matter.Runner.run(newGameInstance.engine);
 
-      Matter.Events.on(newGameInstance.engine, 'collisionStart', (event: Matter.IEventCollision<Matter.Engine>) => {
-        event.pairs.forEach((pair) => {
-          const bodyA = pair.bodyA;
-          const bodyB = pair.bodyB;
-
-          if (bodyA === ball && bodyB === boundsTop) {
-            // Collision with top bound
-            this.handleCollisionWithBounds(ball, boundsTop, gameId);
-          } else if (bodyA === ball && bodyB === boundsBottom) {
-            // Collision with bottom bound
-            this.handleCollisionWithBounds(ball, boundsBottom, gameId);
-          } else if (bodyA === ball && bodyB === paddle1) {
-            // Collision with paddle 1
-            this.handleCollisionWithPaddle(ball, paddle1, gameId);
-          } else if (bodyA === paddle1 && bodyB === ball) {
-            // Collision with paddle 1 (reversed order)
-            this.handleCollisionWithPaddle(ball, paddle1, gameId);
-          } else if (bodyA === ball && bodyB === paddle2) {
-            // Collision with paddle 2
-            this.handleCollisionWithPaddle(ball, paddle2, gameId);
-          } else if (bodyA === paddle2 && bodyB === ball) {
-            // Collision with paddle 2 (reversed order)
-            this.handleCollisionWithPaddle(ball, paddle2, gameId);
-          }
-        });
-      });
-
-
-      Matter.Events.on(newGameInstance.engine, 'beforeUpdate', () => {
-        if (ball.position.x < -25 || ball.position.x > this.gameWidth + 25) {
-          if (ball.position.x < -25) {
+      Matter.Events.on(newGameInstance.engine, 'afterUpdate', () => {
+        if (ball.position.x < -50 || ball.position.x > this.gameWidth + 50) {
+          if (ball.position.x < -50) {
             this.games[gameId].score.player2 += 1;
             player1.emit('UpdateScore', JSON.stringify(this.games[gameId].score))
             player2.emit('UpdateScore', JSON.stringify(this.games[gameId].score))
-            if (this.games[gameId].score.player2 == 7) {
+            if (this.games[gameId].score.player2 == 11) {
               player1.emit('changeState', JSON.stringify({ gameState: 'Finished' }));
               player2.emit('changeState', JSON.stringify({ gameState: 'Finished' }));
               Matter.World.clear(newGameInstance.world, false);
@@ -177,28 +152,81 @@ export class GameGateway {
               // Matter.Render.stop(newGameInstance.engine.render);
               Matter.Runner.stop(runner);
             }
-          } else
-            if (ball.position.x > this.gameWidth + 25) {
-              this.games[gameId].score.player1 += 1;
-              player1.emit('UpdateScore', JSON.stringify(this.games[gameId].score))
-              player2.emit('UpdateScore', JSON.stringify(this.games[gameId].score))
-              if (this.games[gameId].score.player1 == 7) {
-                player1.emit('changeState', JSON.stringify({ gameState: 'Finished' }));
-                player2.emit('changeState', JSON.stringify({ gameState: 'Finished' }));
-                Matter.World.clear(newGameInstance.world, false);
-                Matter.Engine.clear(newGameInstance.engine);
-                // Matter.Render.stop(newGameInstance.engine.render);
-                Matter.Runner.stop(runner);
-              }
+          } else if (ball.position.x > this.gameWidth + 50) {
+            this.games[gameId].score.player1 += 1;
+            player1.emit('UpdateScore', JSON.stringify(this.games[gameId].score))
+            player2.emit('UpdateScore', JSON.stringify(this.games[gameId].score))
+            if (this.games[gameId].score.player1 == 11) {
+              player1.emit('changeState', JSON.stringify({ gameState: 'Finished' }));
+              player2.emit('changeState', JSON.stringify({ gameState: 'Finished' }));
+              Matter.World.clear(newGameInstance.world, false);
+              Matter.Engine.clear(newGameInstance.engine);
+              // Matter.Render.stop(newGameInstance.engine.render);
+              Matter.Runner.stop(runner);
             }
-
-          const newStart = this.getNewStart(this.gameWidth, this.gameHeight);
+          }
+          ball.isSleeping = true;
+          setTimeout(() => ball.isSleeping = false, 150);
+          const newStart = this.getNewStart(this.gameWidth, this.gameHeight, gameId);
           Matter.Body.setPosition(ball, newStart.position);
           this.games[gameId].velocity = newStart.velocity;
         }
+
+        if (ball.velocity.y > 0 && ball.position.y + this.ballRadius >= this.gameHeight - 5) {
+          // console.log("collision down")
+          this.games[gameId].velocity.y *= -1;
+          Matter.Body.setVelocity(ball, this.games[gameId].velocity);
+        }
+
+        if (ball.velocity.y < 0 && ball.position.y - this.ballRadius <= 5) {
+          // console.log("collision up")
+          this.games[gameId].velocity.y *= -1;
+          Matter.Body.setVelocity(ball, this.games[gameId].velocity);
+        }
+
+        {
+          const maxAngle = Math.PI / 4; // Adjust this value to control the maximum angle of deflection
+
+          // Calculate the angle of collision
+          const dx = ball.position.x - paddle1.position.x;
+          const dy = ball.position.y - paddle1.position.y;
+
+          if (Math.abs(dx) <= (ball.circleRadius + this.paddleWidth / 2) && Math.abs(dy) <= (this.ballRadius + this.paddleHeight / 2)) {
+            const angle = Math.atan2(dy, dx);
+
+            // Limit the angle within the specified range
+            const limitedAngle = Math.max(-maxAngle, Math.min(angle, maxAngle));
+
+            // Apply the spin effect with the limited angle
+            this.games[gameId].velocity.x = Math.cos(limitedAngle) * this.games[gameId].speed;
+            this.games[gameId].velocity.y = Math.sin(limitedAngle) * this.games[gameId].speed;
+            Matter.Body.setVelocity(ball, this.games[gameId].velocity);
+          }
+        }
+
+        {
+          const maxAngle = Math.PI / 4; // Adjust this value to control the maximum angle of deflection
+
+          // Calculate the angle of collision
+          const dx = ball.position.x - paddle2.position.x;
+          const dy = ball.position.y - paddle2.position.y;
+
+          if (Math.abs(dx) <= (ball.circleRadius + this.paddleWidth / 2) && Math.abs(dy) <= (this.ballRadius + this.paddleHeight / 2)) {
+            const angle = Math.atan2(dy, dx);
+
+            // Limit the angle within the specified range
+            const limitedAngle = Math.max(-maxAngle, Math.min(angle, maxAngle));
+
+            // Apply the spin effect with the limited angle
+            this.games[gameId].velocity.x = -Math.cos(limitedAngle) * this.games[gameId].speed;
+            this.games[gameId].velocity.y = Math.sin(limitedAngle) * this.games[gameId].speed;
+            Matter.Body.setVelocity(ball, this.games[gameId].velocity);
+          }
+
+        }
+
+
         Matter.Body.setVelocity(ball, this.games[gameId].velocity);
-        player1.emit('updateOpponentPaddle', JSON.stringify({ x: paddle2.position.x, y: paddle2.position.y }));
-        player2.emit('updateOpponentPaddle', JSON.stringify({ x: paddle1.position.x, y: paddle1.position.y }));
         player1.emit('updateBallState', JSON.stringify({
           x: ball.position.x,
           y: ball.position.y,
@@ -207,12 +235,12 @@ export class GameGateway {
           x: ball.position.x,
           y: ball.position.y,
         }));
+
       });
 
-    };
 
-
-    console.log("Starting Game", { gameId });
+      console.log("Starting Game", { gameId });
+    }
   }
 
   private handleCollisionWithBounds(ball: Matter.Body, bound: Matter.Body, gameId) {
@@ -236,7 +264,7 @@ export class GameGateway {
   }
 
 
-  private getNewStart(gameWidth, gameHeight) {
+  private getNewStart(gameWidth, gameHeight, gameId: number) {
     const angle = Matter.Common.random(-75, -25) + Matter.Common.random(0, 1) * 100; // Random angle between -75 and -25, or between 25 and 75 degrees
 
     const angleRad = this.degreesToRadians(angle);
@@ -244,8 +272,9 @@ export class GameGateway {
     const directionX = Math.cos(angleRad);
     const directionY = Math.sin(angleRad);
 
-    const velocityMagnitude = this.getRandomNumberRange(10, 15); // Random velocity magnitude between 10 and 15
-
+    const velocityMagnitude = this.games[gameId].speed; // Random velocity magnitude between 10 and 15
+    // console.log(velocityMagnitude)
+    this.games[gameId].speed += 0.5;
     const velocity = {
       x: directionX * velocityMagnitude,
       y: directionY * velocityMagnitude,

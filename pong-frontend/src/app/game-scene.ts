@@ -26,9 +26,9 @@ export class GameScene extends Phaser.Scene {
   private playerScore2!: number;
   public star!: Phaser.GameObjects.Image;
   public win!: Phaser.GameObjects.Image;
+  public background!: Phaser.GameObjects.Image;
 
-  // private winTextPlayer1!: Phaser.GameObjects.Text;
-  // private winTextPlayer2!: Phaser.GameObjects.Text;
+  public winText!: Phaser.GameObjects.Text;
 
   private gameHeight = 0;
   private gameWidth = 0;
@@ -83,6 +83,8 @@ export class GameScene extends Phaser.Scene {
     this.win = this.add.image(this.gameWidth / 2, this.gameHeight / 2, 'win').setVisible(false);
     this.star = this.add.image(this.gameWidth / 2, this.gameHeight / 2, 'star').setVisible(false);
 
+    this.star.displayWidth = 784.57; // Set the width to 100 pixels
+    this.star.displayHeight = 523.05; //
 
     this.star.setDepth(1);
     // this.wallUp = this.physics.add.image(650, 15, 'wall');
@@ -93,6 +95,7 @@ export class GameScene extends Phaser.Scene {
     // this.winTextPlayer1 = this.add.text(400, 150, '', { fontSize: '128px', fill: '#fff' } as Phaser.Types.GameObjects.Text.TextStyle);
     // this.winTextPlayer2 = this.add.text(900, 150, '', { fontSize: '128px', fill: '#fff' } as Phaser.Types.GameObjects.Text.TextStyle);
     //
+    this.winText = this.add.text(this.gameWidth / 2 - 170, this.gameHeight / 2 - 100, '', { fontSize: '169px', fill: '#fff', fontFamily: 'Montserrat' } as Phaser.Types.GameObjects.Text.TextStyle);
     this.scoreText1 = this.add.text(555, 20, '0', { fontSize: '40px', fill: '#fff', fontFamily: 'Montserrat' } as Phaser.Types.GameObjects.Text.TextStyle);
     this.scoreText2 = this.add.text(this.gameWidth - 555, 20, '0', { fontSize: '40px', fill: '#fff', fontFamily: 'Montserrat' } as Phaser.Types.GameObjects.Text.TextStyle).setOrigin(1, 0);
   }
@@ -101,7 +104,9 @@ export class GameScene extends Phaser.Scene {
     this.gameHeight = this.sys.canvas.height;
     this.gameWidth = this.sys.canvas.width;
     this.cursors = this.input?.keyboard?.createCursorKeys()!;
-    this.add.image(0, 0, 'background').setOrigin(0, 0);
+    this.background = this.add.image(0, 0, 'background').setOrigin(0, 0);
+    this.background.displayWidth = this.gameWidth; // Set the width to 100 pixels
+    this.background.displayHeight = this.gameHeight; //
     this.add.image(this.gameWidth / 2, this.gameHeight / 2, 'line')
     this.cameras.main.setBackgroundColor('#103960');
     this.setupGameObject();
@@ -131,9 +136,9 @@ export class GameScene extends Phaser.Scene {
   override update() {
     this.store.dispatch(SendMyPaddlePosition({ position: { x: this.myPaddle.x, y: this.myPaddle.y } }));
     if (this.myPaddle.body?.velocity) {
-      if (this.cursors.up.isDown && this.myPaddle.y - this.myPaddle.height > -28) {
+      if (this.cursors.up.isDown && this.myPaddle.y - this.myPaddle.height > -29.5) {
         this.myPaddle.setVelocityY(-this.paddleSpeed);
-      } else if (this.cursors.down.isDown && this.myPaddle.y + this.myPaddle.height < this.gameHeight + 28) {
+      } else if (this.cursors.down.isDown && this.myPaddle.y + this.myPaddle.height < this.gameHeight + 29.5) {
         this.myPaddle.setVelocityY(this.paddleSpeed);
       } else if (this.myPaddle.body.velocity.y != 0) {
         this.myPaddle.setVelocityY(0);

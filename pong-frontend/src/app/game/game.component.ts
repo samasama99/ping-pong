@@ -74,7 +74,9 @@ export class GameComponent implements OnInit {
           case GameStateType.Finished: {
             console.log("game Finished")
             this.gameScene.win.setVisible(true);
-            this.gameScene.star.setVisible(true);
+            // this.gameScene.star.setVisible(true);
+
+            this.gameScene.winText.setText("WIN");
             // this.gameScene?.scene.stop();
             break;
           }

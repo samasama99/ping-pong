@@ -29,7 +29,6 @@ export class GameScene extends Phaser.Scene {
   public background!: Phaser.GameObjects.Image;
 
   public winText!: Phaser.GameObjects.Text;
-
   private gameHeight = 0;
   private gameWidth = 0;
 

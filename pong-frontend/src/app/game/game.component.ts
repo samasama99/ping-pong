@@ -24,8 +24,9 @@ export class GameComponent implements OnInit {
       type: Phaser.AUTO,
       width: 1232,
       height: 685,
+      // backgroundColor: '#103960',
+      //
       parent: 'game-container',
-      backgroundColor: '#103960',
       physics: {
         default: 'arcade',
         arcade: {
@@ -34,6 +35,7 @@ export class GameComponent implements OnInit {
       scale: {
         mode: Phaser.Scale.WIDTH_CONTROLS_HEIGHT,
         autoCenter: Phaser.Scale.CENTER_BOTH,
+        parent: 'game-container',
       },
       scene: []
     };

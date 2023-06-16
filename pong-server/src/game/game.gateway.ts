@@ -1,5 +1,6 @@
 import { WebSocketGateway, SubscribeMessage } from '@nestjs/websockets';
 import { Bodies, Body, Common, Engine, Events, Runner, World, } from 'matter-js';
+import { TimeInterval } from 'rxjs/internal/operators/timeInterval';
 import { Socket } from 'socket.io';
 // import * as Matter from 'matter-js'
 
@@ -12,6 +13,8 @@ const PADDLEHEIGHT = 119;
 const PADDLE1POSITION = { x: 27, y: GAMEHEIGHT / 2 };
 const PADDLE2POSITION = { x: GAMEWIDTH - 27, y: GAMEHEIGHT / 2 };
 const MAXANGLE = Math.PI / 4;
+const INITALBALLSPEED = 9.5;
+const DAMPINGFACTOR = 0.99;
 
 enum PlayerNumber { ONE, TWO };
 
@@ -54,6 +57,7 @@ class GameInstance {
   private velocity: Matter.Vector;
   private score: { player1: number, player2: number } = { player1: 0, player2: 0 };
   private speed: number = 9.5;
+  private checkBallPaddleColisionInterval: NodeJS.Timer;
 
   constructor(private gameId: number, private player1: Socket, private player2: Socket) {
     this.engine = Engine.create();
@@ -63,13 +67,15 @@ class GameInstance {
     this.engine.gravity.y = 0;
 
 
-    const newStart = this.getNewStart(GAMEWIDTH, GAMEHEIGHT);
-    const ballPosition = newStart.position;
-    this.velocity = newStart.velocity;
+    this.velocity = this.getNewStart(GAMEWIDTH, GAMEHEIGHT).velocity;
 
-    this.ball = Bodies.circle(GAMEWIDTH / 2, GAMEHEIGHT / 2, BALLRADIUS);
+    this.ball = Bodies.circle(GAMEWIDTH / 2, GAMEHEIGHT / 2, BALLRADIUS,
+      {
+        label: 'ball',
+        restitution: 1.0, // Set the restitution to 1.0 for constant velocity
+      }
+    );
 
-    Body.setPosition(this.ball, ballPosition);
     Body.setVelocity(this.ball, this.velocity);
 
     this.paddle1 = Bodies.rectangle(PADDLE1POSITION.x, PADDLE1POSITION.y, PADDLEWIDTH, PADDLEHEIGHT, {
@@ -150,10 +156,57 @@ class GameInstance {
   }
 
   private stopGame() {
+    clearInterval(this.checkBallPaddleColisionInterval);
+    World.remove(this.world, [this.paddle1, this.paddle2, this.ball]);
     World.clear(this.world, false);
     Engine.clear(this.engine);
     if (this.runner)
       Runner.stop(this.runner);
+
+    this.player1.off('sendMyPaddleState', (state) => {
+      const position = JSON.parse(state);
+      Body.setPosition(this.paddle1, position);
+      this.player2.emit('updateOpponentPaddle', JSON.stringify({ x: this.paddle1.position.x, y: this.paddle1.position.y }));
+    })
+
+    this.player2.off('sendMyPaddleState', (state) => {
+      const position = JSON.parse(state);
+      Body.setPosition(this.paddle2, position);
+      this.player1.emit('updateOpponentPaddle', JSON.stringify({ x: this.paddle2.position.x, y: this.paddle2.position.y }));
+    })
+
+    this.player1.off('disconnect', () => {
+      this.player2.emit('changeState', JSON.stringify({ gameState: 'Finished', isWin: true }))
+      this.stopGame();
+    });
+
+    this.player2.off('disconnect', () => {
+      this.player1.emit('changeState', JSON.stringify({ gameState: 'Finished', isWin: true }))
+      this.stopGame();
+    });
+
+    this.player1.off('playerIsReady', () => {
+      console.log('player1 is ready');
+      this.player1Ready = true;
+
+      if (this.player2Ready) {
+        this.startGame();
+      } else {
+        this.player1.emit('waitingForOpponent');
+      }
+    });
+
+    this.player2.off('playerIsReady', () => {
+      console.log('player2 is ready');
+      this.player2Ready = true;
+
+      if (this.player1Ready) {
+        this.startGame();
+      } else {
+        this.player2.emit('waitingForOpponent');
+      }
+    });
+
   }
 
   private resetBall() {
@@ -171,6 +224,10 @@ class GameInstance {
     console.log("paddle1", this.paddle1.position);
     console.log("paddle2", this.paddle2.position);
     console.log("ball", this.ball.position);
+
+
+    this.checkBallPaddleColisionInterval = setInterval(() => { this.checkBallPaddleColision() }, 1)
+    Events.on(this.engine, 'beforeUpdate', () => { this.checkBallPaddleColision() });
 
     Events.on(this.engine, 'afterUpdate', () => {
       if (this.ball.position.x < 0) {
@@ -205,11 +262,16 @@ class GameInstance {
 
     });
 
+    setInterval(() => {
+      this.velocity.x *= DAMPINGFACTOR;
+      this.velocity.y *= DAMPINGFACTOR;
+    }, 100)
 
     console.log("Starting Game :", this.gameId);
   }
 
   private sendBallPosition() {
+    // console.log("ball speed", this.ball.speed);
     Body.setVelocity(this.ball, this.velocity);
     this.player1.emit('updateBallState', JSON.stringify({
       x: this.ball.position.x,
@@ -234,6 +296,7 @@ class GameInstance {
         this.velocity.x = Math.cos(limitedAngle) * this.speed;
         this.velocity.y = Math.sin(limitedAngle) * this.speed;
         Body.setVelocity(this.ball, this.velocity);
+        this.speed += 0.1;
       }
     }
     {
@@ -248,15 +311,19 @@ class GameInstance {
         this.velocity.x = -Math.cos(limitedAngle) * this.speed;
         this.velocity.y = Math.sin(limitedAngle) * this.speed;
         Body.setVelocity(this.ball, this.velocity);
+        this.speed += 0.1;
       }
 
     }
   }
 
   private getNewStart(gameWidth, gameHeight) {
-    const angle = Common.random(-75, -25) + Common.random(0, 1) * 100; // Random angle between -75 and -25, or between 25 and 75 degrees
+    this.speed = INITALBALLSPEED;
+    const sign = Common.choose([-1, 1]);
+    const angle = Common.random(25, 55);
+    console.log(angle);
 
-    const angleRad = this.degreesToRadians(angle);
+    const angleRad = this.degreesToRadians(sign * angle);
 
     const directionX = Math.cos(angleRad);
     const directionY = Math.sin(angleRad);
@@ -271,7 +338,6 @@ class GameInstance {
       y: this.getRandomNumberRange(0, gameHeight),
     };
 
-    this.speed += 0.5;
     return { position, velocity };
   }
 

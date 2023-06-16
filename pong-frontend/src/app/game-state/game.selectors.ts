@@ -2,6 +2,8 @@ import { createSelector } from '@ngrx/store';
 
 export const selectGame = (state: any) => state;
 
+export const selectAllState = createSelector(selectGame, (state) => state.game);
+
 export const selectOpponentPaddleState = createSelector(selectGame, (state) => state.game.opponentPaddle);
 
 export const selectBallState = createSelector(selectGame, (state) => state.game.ball);

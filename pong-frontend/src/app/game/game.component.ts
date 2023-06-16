@@ -7,6 +7,7 @@ import { GameState, GameStateType, PlayerNumber } from '../game-state/game.state
 import { Socket } from 'ngx-socket-io';
 import { GameService } from '../game.service';
 import { CreateGame, SetPlayerNumber, UpdateGameState } from '../game-state/game.actions';
+import { selectAllState, selectGameState } from '../game-state/game.selectors';
 
 @Component({
   selector: 'app-game',
@@ -18,6 +19,7 @@ export class GameComponent implements OnInit {
   private config: Phaser.Types.Core.GameConfig;
   private store: Store<GameState> = inject(Store);
   private gameScene!: GameScene;
+  public gameState = this.store.select(selectAllState);
 
   constructor(private gameService: GameService) {
     this.config = {

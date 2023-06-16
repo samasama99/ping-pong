@@ -1,8 +1,10 @@
 import { WebSocketGateway, SubscribeMessage } from '@nestjs/websockets';
 import { Bodies, Body, Common, Engine, Events, Runner, World, } from 'matter-js';
+import { queue } from 'rxjs';
 import { TimeInterval } from 'rxjs/internal/operators/timeInterval';
 import { Socket } from 'socket.io';
 // import * as Matter from 'matter-js'
+import { sampleSize } from 'lodash';
 
 
 const GAMEWIDTH = 1232;
@@ -27,21 +29,29 @@ enum PlayerNumber { ONE, TWO };
 })
 export class GameGateway {
   private queue: Array<Socket> = [];
-  private activeGameInstances: Map<number, GameInstance> = new Map();
+  private activeGameInstances: GameInstance[] = []
+
+  constructor() {
+    setInterval(() => {
+      console.log("queue size", this.queue.length);
+      console.log("active game instances", this.activeGameInstances.length);
+      this.activeGameInstances = this.activeGameInstances.filter(game => !game.inactive);
+      if (this.queue.length >= 2) {
+        let [player1, player2]: Socket[] = sampleSize(this.queue, 2);
+        this.queue = this.queue.filter(player => player !== player1 && player !== player2);
+        this.activeGameInstances.push(new GameInstance(player1, player2));
+      }
+    }, 1000);
+  }
 
   @SubscribeMessage('createGame')
   create(socket: Socket) {
-    console.log("create game");
-    if (this.queue.length == 0) {
-      this.queue.push(socket)
-      socket.emit('changeState', JSON.stringify({ gameState: 'Queue' }));
-      return;
-    }
-
-    let player1: Socket = this.queue.pop()
-    let player2: Socket = socket;
-    const gameId = Date.now();
-    this.activeGameInstances.set(gameId, new GameInstance(gameId, player1, player2))
+    this.queue.push(socket)
+    socket.on('disconnect', () => {
+      this.queue = this.queue.filter(player => player.id != socket.id);
+      socket.removeAllListeners('disconnect');
+    });
+    socket.emit('changeState', JSON.stringify({ gameState: 'Queue' }));
   }
 }
 
@@ -58,8 +68,9 @@ class GameInstance {
   private score: { player1: number, player2: number } = { player1: 0, player2: 0 };
   private speed: number = 9.5;
   private checkBallPaddleColisionInterval: NodeJS.Timer;
+  public inactive = false;
 
-  constructor(private gameId: number, private player1: Socket, private player2: Socket) {
+  constructor(private player1: Socket, private player2: Socket) {
     this.engine = Engine.create();
     this.world = this.engine.world;
 
@@ -207,10 +218,12 @@ class GameInstance {
       }
     });
 
+    this.inactive = true;
+
   }
 
   private resetBall() {
-    console.log(this.ball.position);
+    // console.log(this.ball.position);
     this.ball.isSleeping = true;
     setTimeout(() => this.ball.isSleeping = false, 150);
     const newStart = this.getNewStart(GAMEWIDTH, GAMEHEIGHT);
@@ -221,9 +234,9 @@ class GameInstance {
   private startGame() {
     console.log("Starting The Engine")
     this.runner = Runner.run(this.engine);
-    console.log("paddle1", this.paddle1.position);
-    console.log("paddle2", this.paddle2.position);
-    console.log("ball", this.ball.position);
+    // console.log("paddle1", this.paddle1.position);
+    // console.log("paddle2", this.paddle2.position);
+    // console.log("ball", this.ball.position);
 
 
     this.checkBallPaddleColisionInterval = setInterval(() => { this.checkBallPaddleColision() }, 1)
@@ -267,7 +280,6 @@ class GameInstance {
       this.velocity.y *= DAMPINGFACTOR;
     }, 100)
 
-    console.log("Starting Game :", this.gameId);
   }
 
   private sendBallPosition() {
@@ -321,7 +333,7 @@ class GameInstance {
     this.speed = INITALBALLSPEED;
     const sign = Common.choose([-1, 1]);
     const angle = Common.random(25, 55);
-    console.log(angle);
+    // console.log(angle);
 
     const angleRad = this.degreesToRadians(sign * angle);
 

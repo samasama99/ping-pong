@@ -3,7 +3,7 @@ import { GameScene } from '../game-scene';
 import Phaser, { Scene } from 'phaser';
 import 'phaser3-nineslice';
 import { Store } from '@ngrx/store';
-import { GameState, GameStateType, PlayerNumber } from '../game-state/game.state';
+import { GameState, GameStateType, Player } from '../game-state/game.state';
 import { Socket } from 'ngx-socket-io';
 import { GameService } from '../game.service';
 import { CreateGame, SetPlayerNumber, UpdateGameState } from '../game-state/game.actions';
@@ -27,7 +27,6 @@ export class GameComponent implements OnInit {
       width: 1232,
       height: 685,
       // backgroundColor: '#103960',
-      //
       parent: 'game-container',
       physics: {
         default: 'arcade',
@@ -49,7 +48,7 @@ export class GameComponent implements OnInit {
     this.gameService.createGame()
       .subscribe(payload => {
         console.log({ payload });
-        const state: { gameState: GameStateType, playerNumber: PlayerNumber, isWin: boolean } = JSON.parse(payload);
+        const state: { gameState: GameStateType, playerNumber: Player, isWin: boolean } = JSON.parse(payload);
         if (state.gameState) {
           this.store.dispatch(UpdateGameState({ newState: state.gameState }));
         }
@@ -70,20 +69,10 @@ export class GameComponent implements OnInit {
             }
             break;
           }
-          // case GameStateType.Created:
-          // case GameStateType.NotCreated:
-          // case GameStateType.Waiting:
-          case GameStateType.Pause: {
-            this.gameScene?.scene.stop();
-            break;
-          }
-          case GameStateType.Queue:
           case GameStateType.Finished: {
             if (this.gameScene) {
               console.log("game Finished")
               this.gameScene.win.setVisible(true);
-              // this.gameScene.star.setVisible(true);
-
               this.gameScene.winText.setText(state.isWin ? "WON" : "LOST");
               // this.gameScene?.scene.stop();
             } else {

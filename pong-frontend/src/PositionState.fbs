@@ -1,0 +1,6 @@
+table PositionState {
+  x: float;
+  y: float;
+}
+
+root_type PositionState;

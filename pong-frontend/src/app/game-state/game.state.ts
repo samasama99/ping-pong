@@ -2,24 +2,23 @@
 
 export enum GameStateType {
   Created = "Created",
-  NotCreated = "NotCreated",
-  Waiting = "Waiting",
-  Pause = "Pause",
-  // OutOfSynch = "",
   Queue = "Queue",
+  // Preparing = "Preparing",
   Playing = "Playing",
   Finished = "Finished"
 };
-export enum PlayerNumber { PlayerOne = 'PlayerOne', PlayerTwo = 'PlayerTwo', NotSetYet = "NotSetYet", AI = "AI" };
+
+export enum Player { NotSetYet = 0, One = 1, Two = 2 };
+export type Position = { x: number, y: number };
 
 
 export interface GameState {
   score: { player1: number, player2: number };
-  myPaddle: { x: number, y: number };
-  opponentPaddle: { x: number, y: number };
-  ball: { x: number, y: number };
+  myPaddle: Position;
+  opponentPaddle: Position;
+  ball: Position;
   state: GameStateType;
-  playerNumber: PlayerNumber;
+  playerNumber: Player;
 }
 
 export const initialState: GameState = {
@@ -27,16 +26,11 @@ export const initialState: GameState = {
     player1: 0,
     player2: 0
   },
-
   myPaddle: { x: 0, y: 0 },
-
   opponentPaddle: { x: 0, y: 0 },
-
   ball: { x: 0, y: 0 },
-
-  state: GameStateType.Waiting,
-
-  playerNumber: PlayerNumber.NotSetYet,
+  state: GameStateType.Created,
+  playerNumber: Player.NotSetYet,
 };
 
 

@@ -1,5 +1,5 @@
 import { createAction, props } from '@ngrx/store';
-import { GameStateType, PlayerNumber } from './game.state';
+import { GameStateType, Player } from './game.state';
 
 export const CreateGame = createAction('[Game] Create Game');
 
@@ -37,7 +37,7 @@ export const UpdateGameState = createAction(
 export const SetPlayerNumber = createAction(
   '[Game] Set Player Number',
   props<{
-    playerNumber: PlayerNumber
+    playerNumber: Player
   }>()
 )
 

@@ -2,7 +2,7 @@ import Phaser from 'phaser';
 import 'phaser3-nineslice';
 import { Store } from '@ngrx/store';
 import { SendMyPaddlePosition, StartGame, } from './game-state/game.actions'
-import { GameState, PlayerNumber } from './game-state/game.state';
+import { GameState, Player } from './game-state/game.state';
 import { selectBallState, selectOpponentPaddleState, selectPlayerScore } from './game-state/game.selectors';
 
 
@@ -33,7 +33,7 @@ export class GameScene extends Phaser.Scene {
   private gameWidth = 0;
 
 
-  constructor(private store: Store<GameState>, private playerNumber: PlayerNumber) {
+  constructor(private store: Store<GameState>, private playerNumber: Player) {
     super({ key: 'game' });
     console.log("constructor", playerNumber)
   }
@@ -59,14 +59,14 @@ export class GameScene extends Phaser.Scene {
 
   setupGameObject() {
     switch (this.playerNumber) {
-      case PlayerNumber.PlayerOne:
+      case Player.One:
         {
           console.log("init control PlayerOne")
           this.myPaddle = this.physics.add.image(27, this.gameHeight / 2, 'paddle');
           this.opponentPaddle = this.physics.add.image(this.gameWidth - 27, this.gameHeight / 2, 'paddle');
           break;
         }
-      case PlayerNumber.PlayerTwo:
+      case Player.Two:
         {
           console.log("init control PlayerTwo")
           this.myPaddle = this.physics.add.image(this.gameWidth - 27, this.gameHeight / 2, 'paddle');
@@ -131,6 +131,7 @@ export class GameScene extends Phaser.Scene {
         this.scoreText1.setText(`${this.playerScore1}`)
         this.scoreText2.setText(`${this.playerScore2}`)
       });
+
   }
 
   override update() {

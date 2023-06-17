@@ -2,7 +2,8 @@ import { Injectable } from '@angular/core';
 import { Store } from '@ngrx/store';
 import { Socket } from 'ngx-socket-io';
 import { UpdateBall, UpdateOpponentPosition, UpdateScore } from './game-state/game.actions';
-
+import * as flatbuffers from 'flatbuffers';
+import { PositionState } from 'src/position-state';
 
 @Injectable({
   providedIn: 'root'
@@ -16,25 +17,34 @@ export class GameService {
   }
 
   sendMyPaddlePosition(position: { x: number, y: number }) {
-    this.socket.emit('sendMyPaddleState', JSON.stringify({ x: position.x, y: position.y }));
+    const builder = new flatbuffers.Builder();
+    const offset = PositionState.createPositionState(builder, position.x, position.y);
+    builder.finish(offset);
+    const buffer = builder.asUint8Array();
+
+    this.socket.emit('sendMyPaddleState', buffer);
   }
 
   updateOpponentPaddle() {
-    this.socket.fromEvent<string>('updateOpponentPaddle').subscribe((state) => {
-      const position = JSON.parse(state);
-      // console.log("parse", position)
-      this.store.dispatch(UpdateOpponentPosition({ position }))
-    })
+    this.socket.fromEvent<ArrayBuffer>('updateOpponentPaddle').subscribe((state) => {
+      const buffer = new flatbuffers.ByteBuffer(new Uint8Array(state));
+      const paddleState = PositionState.getRootAsPositionState(buffer);
+
+      const x = paddleState.x();
+      const y = paddleState.y();
+      this.store.dispatch(UpdateOpponentPosition({ position: { x, y } }));
+    });
   }
 
   updateBallStateEvent() {
-    this.socket.fromEvent<string>('updateBallState').subscribe((state) => {
-      const ball: {
-        x: number, y: number
-      } = JSON.parse(state);
+    this.socket.fromEvent<ArrayBuffer>('updateBallState').subscribe((state) => {
+      const buffer = new flatbuffers.ByteBuffer(new Uint8Array(state));
+      const ballState = PositionState.getRootAsPositionState(buffer);
 
-      this.store.dispatch(UpdateBall({ ball }))
-    })
+      const x = ballState.x();
+      const y = ballState.y();
+      this.store.dispatch(UpdateBall({ ball: { x, y } }));
+    });
   }
 
   updatePlayerScoreEvent() {
@@ -50,5 +60,6 @@ export class GameService {
   playerIsReady() {
     this.socket.emit('playerIsReady');
   }
+
 
 }

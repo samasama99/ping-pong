@@ -6,6 +6,9 @@ import { Socket } from 'socket.io';
 // import * as Matter from 'matter-js'
 import { sampleSize } from 'lodash';
 
+import * as flatbuffers from 'flatbuffers';
+import { PositionState } from 'src/position-state';
+
 
 const GAMEWIDTH = 1232;
 const GAMEHEIGHT = 685;
@@ -33,14 +36,16 @@ export class GameGateway {
 
   constructor() {
     setInterval(() => {
-      console.log("queue size", this.queue.length);
-      console.log("active game instances", this.activeGameInstances.length);
+      // console.log("queue size", this.queue.length);
+      // console.log("active game instances", this.activeGameInstances.length);
+      // console.log("before", process.memoryUsage())
       this.activeGameInstances = this.activeGameInstances.filter(game => !game.inactive);
       if (this.queue.length >= 2) {
         let [player1, player2]: Socket[] = sampleSize(this.queue, 2);
         this.queue = this.queue.filter(player => player !== player1 && player !== player2);
         this.activeGameInstances.push(new GameInstance(player1, player2));
       }
+      // console.log("after", process.memoryUsage())
     }, 1000);
   }
 
@@ -101,16 +106,26 @@ class GameInstance {
 
 
     player1.on('sendMyPaddleState', (state) => {
-      const position = JSON.parse(state);
-      Body.setPosition(this.paddle1, position);
-      player2.emit('updateOpponentPaddle', JSON.stringify({ x: this.paddle1.position.x, y: this.paddle1.position.y }));
-    })
+      const buffer = new flatbuffers.ByteBuffer(new Uint8Array(state));
+      const paddleState = PositionState.getRootAsPositionState(buffer);
+
+      const x = paddleState.x();
+      const y = paddleState.y();
+      Body.setPosition(this.paddle1, { x, y });
+
+      player2.emit('updateOpponentPaddle', state);
+    });
 
     player2.on('sendMyPaddleState', (state) => {
-      const position = JSON.parse(state);
-      Body.setPosition(this.paddle2, position);
-      player1.emit('updateOpponentPaddle', JSON.stringify({ x: this.paddle2.position.x, y: this.paddle2.position.y }));
-    })
+      const buffer = new flatbuffers.ByteBuffer(new Uint8Array(state));
+      const paddleState = PositionState.getRootAsPositionState(buffer);
+
+      const x = paddleState.x();
+      const y = paddleState.y();
+      Body.setPosition(this.paddle2, { x, y });
+
+      player1.emit('updateOpponentPaddle', state);
+    });
 
     player1.on('disconnect', () => {
       player2.emit('changeState', JSON.stringify({ gameState: 'Finished', isWin: true }))
@@ -122,8 +137,8 @@ class GameInstance {
       this.stopGame();
     });
 
-    player1.emit('changeState', JSON.stringify({ gameState: 'Playing', playerNumber: "PlayerOne" }));
-    player2.emit('changeState', JSON.stringify({ gameState: 'Playing', playerNumber: "PlayerTwo" }));
+    player1.emit('changeState', JSON.stringify({ gameState: 'Playing', playerNumber: 1 }));
+    player2.emit('changeState', JSON.stringify({ gameState: 'Playing', playerNumber: 2 }));
 
 
     player1.on('playerIsReady', () => {
@@ -234,10 +249,6 @@ class GameInstance {
   private startGame() {
     console.log("Starting The Engine")
     this.runner = Runner.run(this.engine);
-    // console.log("paddle1", this.paddle1.position);
-    // console.log("paddle2", this.paddle2.position);
-    // console.log("ball", this.ball.position);
-
 
     this.checkBallPaddleColisionInterval = setInterval(() => { this.checkBallPaddleColision() }, 1)
     Events.on(this.engine, 'beforeUpdate', () => { this.checkBallPaddleColision() });
@@ -283,16 +294,15 @@ class GameInstance {
   }
 
   private sendBallPosition() {
-    // console.log("ball speed", this.ball.speed);
     Body.setVelocity(this.ball, this.velocity);
-    this.player1.emit('updateBallState', JSON.stringify({
-      x: this.ball.position.x,
-      y: this.ball.position.y,
-    }));
-    this.player2.emit('updateBallState', JSON.stringify({
-      x: this.ball.position.x,
-      y: this.ball.position.y,
-    }));
+
+    const builder = new flatbuffers.Builder();
+    const ballStateOffset = PositionState.createPositionState(builder, this.ball.position.x, this.ball.position.y);
+    builder.finish(ballStateOffset);
+    const buffer = builder.asUint8Array();
+
+    this.player1.emit('updateBallState', buffer);
+    this.player2.emit('updateBallState', buffer);
   }
 
   private checkBallPaddleColision() {

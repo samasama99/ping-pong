@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 import 'phaser3-nineslice';
 import { Store } from '@ngrx/store';
-import { SendMyPaddlePosition, StartGame, } from './game-state/game.actions'
+import { SendMyPaddlePosition, StartGame, UpdateOpponentPosition, } from './game-state/game.actions'
 import { GameState, Player } from './game-state/game.state';
 import { selectBallState, selectOpponentPaddleState, selectPlayerScore } from './game-state/game.selectors';
 
@@ -77,6 +77,10 @@ export class GameScene extends Phaser.Scene {
         console.log("default")
     }
 
+    if (this.myPaddle?.body && this.opponentPaddle?.body) {
+      this.store.dispatch(SendMyPaddlePosition({ position: { x: this.myPaddle.x, y: this.myPaddle.y } }));
+      this.store.dispatch(UpdateOpponentPosition({ position: { x: this.opponentPaddle.x, y: this.opponentPaddle.y } }))
+    }
 
     this.ball = this.add.image(this.gameWidth / 2, this.gameHeight / 2, 'ball');
     this.win = this.add.image(this.gameWidth / 2, this.gameHeight / 2, 'win').setVisible(false);
@@ -86,14 +90,9 @@ export class GameScene extends Phaser.Scene {
     this.star.displayHeight = 523.05; //
 
     this.star.setDepth(1);
-    // this.wallUp = this.physics.add.image(650, 15, 'wall');
-    // this.wallDown = this.physics.add.image(650, this.gameHeight - 15, 'wall');
   }
 
   initText() {
-    // this.winTextPlayer1 = this.add.text(400, 150, '', { fontSize: '128px', fill: '#fff' } as Phaser.Types.GameObjects.Text.TextStyle);
-    // this.winTextPlayer2 = this.add.text(900, 150, '', { fontSize: '128px', fill: '#fff' } as Phaser.Types.GameObjects.Text.TextStyle);
-    //
     this.winText = this.add.text(this.gameWidth / 2 - 225, this.gameHeight / 2 - 100, '', { fontSize: '169px', fill: '#fff', fontFamily: 'Montserrat' } as Phaser.Types.GameObjects.Text.TextStyle);
     this.scoreText1 = this.add.text(555, 20, '0', { fontSize: '40px', fill: '#fff', fontFamily: 'Montserrat' } as Phaser.Types.GameObjects.Text.TextStyle);
     this.scoreText2 = this.add.text(this.gameWidth - 555, 20, '0', { fontSize: '40px', fill: '#fff', fontFamily: 'Montserrat' } as Phaser.Types.GameObjects.Text.TextStyle).setOrigin(1, 0);

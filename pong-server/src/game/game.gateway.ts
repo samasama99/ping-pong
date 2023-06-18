@@ -9,7 +9,7 @@ import { sampleSize } from 'lodash';
 import * as flatbuffers from 'flatbuffers';
 import { PositionState } from 'src/position-state';
 import { constrainedMemory } from 'process';
-export enum Color { White = 'White', Blue = 'White', Green = 'Green' };
+export enum Color { White = 'White', Blue = 'Blue', Green = 'Green' };
 
 
 const GAMEWIDTH = 1232;
@@ -267,7 +267,6 @@ class GameInstance {
     this.engine.constraintIterations = 10000;
 
     this.runner = Runner.run(runner, this.engine);
-    // this.checkBallPaddleColisionInterval = setInterval(() => { this.checkBallPaddleColision() }, 1)
     Events.on(this.engine, 'collisionStart', (event) => {
       const pairs = event.pairs;
 
@@ -367,11 +366,8 @@ class GameInstance {
 
   private getNewStart(gameWidth, gameHeight) {
     this.speed = INITALBALLSPEED;
-    const sign = Common.choose([-1, 1]);
-    const angle = Common.random(25, 55);
-    // console.log(angle);
-
-    const angleRad = this.degreesToRadians(sign * angle);
+    const angle = Common.random(Common.choose([-1, 1]) * 25, Common.choose([-1, 1]) * 55);
+    const angleRad = this.degreesToRadians(Common.choose([-1, 1]) * angle);
 
     const directionX = Math.cos(angleRad);
     const directionY = Math.sin(angleRad);

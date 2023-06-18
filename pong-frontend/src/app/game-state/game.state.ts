@@ -10,7 +10,7 @@ export enum GameStateType {
 
 export enum Player { NotSetYet = 0, One = 1, Two = 2 };
 export type Position = { x: number, y: number };
-export enum Color { White = 'White', Blue = 'White', Green = 'Green' };
+export enum Color { White = 'White', Blue = 'Blue', Green = 'Green' };
 
 
 export interface GameState {

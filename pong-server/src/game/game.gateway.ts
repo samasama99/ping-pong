@@ -14,13 +14,13 @@ export enum Color { White = 'White', Blue = 'Blue', Green = 'Green' };
 
 const GAMEWIDTH = 1232;
 const GAMEHEIGHT = 685;
-const BALLRADIUS = 18 / 2;
+const BALLRADIUS = 20 / 2;
 const PADDLEWIDTH = 12;
 const PADDLEHEIGHT = 119;
 const PADDLE1POSITION = { x: 27, y: GAMEHEIGHT / 2 };
 const PADDLE2POSITION = { x: GAMEWIDTH - 27, y: GAMEHEIGHT / 2 };
 const MAXANGLE = Math.PI / 4;
-const INITALBALLSPEED = 90;
+const INITALBALLSPEED = 10;
 const DAMPINGFACTOR = 0.99;
 
 enum PlayerNumber { One, Two };
@@ -252,7 +252,7 @@ class GameInstance {
   private resetBall() {
     // console.log(this.ball.position);
     this.ball.isSleeping = true;
-    setTimeout(() => this.ball.isSleeping = false, 150);
+    setTimeout(() => this.ball.isSleeping = false, 100);
     const newStart = this.getNewStart(GAMEWIDTH, GAMEHEIGHT);
     Body.setPosition(this.ball, newStart.position);
     this.velocity = newStart.velocity;
@@ -262,9 +262,11 @@ class GameInstance {
     console.log("Starting The Engine")
     const runner = Runner.create({
       isFixed: true,
-      delta: 1000 / 480 // Change the time step value here
+      delta: 1000 / 60 // Change the time step value here
     });
-    this.engine.constraintIterations = 10000;
+    this.engine.constraintIterations = 10;
+    this.engine.velocityIterations = 10;
+    this.engine.positionIterations = 10;
 
     this.runner = Runner.run(runner, this.engine);
     Events.on(this.engine, 'collisionStart', (event) => {
@@ -284,7 +286,7 @@ class GameInstance {
     });
 
     Events.on(this.engine, 'afterUpdate', () => {
-      if (this.ball.position.x < 0) {
+      if (this.ball.position.x < -50) {
         this.score.player2 += 1;
         this.updateScore();
         if (this.score.player2 == 7) {
@@ -293,7 +295,7 @@ class GameInstance {
         } else {
           this.resetBall();
         }
-      } else if (this.ball.position.x > GAMEWIDTH) {
+      } else if (this.ball.position.x > GAMEWIDTH + 50) {
         this.score.player1 += 1;
         this.updateScore();
         if (this.score.player1 == 7) {
@@ -347,7 +349,7 @@ class GameInstance {
     this.velocity.x = Math.cos(limitedAngle) * this.speed;
     this.velocity.y = Math.sin(limitedAngle) * this.speed;
     Body.setVelocity(this.ball, this.velocity);
-    this.speed += 5;
+    this.speed += 1;
   }
 
   private checkBallPaddle2Collision() {
@@ -361,7 +363,7 @@ class GameInstance {
     this.velocity.x = -Math.cos(limitedAngle) * this.speed;
     this.velocity.y = Math.sin(limitedAngle) * this.speed;
     Body.setVelocity(this.ball, this.velocity);
-    this.speed += 5;
+    this.speed += 1;
   }
 
   private getNewStart(gameWidth, gameHeight) {

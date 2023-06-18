@@ -9,11 +9,12 @@ import { sampleSize } from 'lodash';
 import * as flatbuffers from 'flatbuffers';
 import { PositionState } from 'src/position-state';
 import { constrainedMemory } from 'process';
+export enum Color { White = 'White', Blue = 'White', Green = 'Green' };
 
 
 const GAMEWIDTH = 1232;
 const GAMEHEIGHT = 685;
-const BALLRADIUS = 17 / 2;
+const BALLRADIUS = 18 / 2;
 const PADDLEWIDTH = 12;
 const PADDLEHEIGHT = 119;
 const PADDLE1POSITION = { x: 27, y: GAMEHEIGHT / 2 };
@@ -105,6 +106,12 @@ class GameInstance {
 
     World.add(this.world, [this.paddle1, this.paddle2, this.ball]);
 
+    player1.on('ping', () => {
+      player1.emit('pong');
+    });
+    player2.on('ping', () => {
+      player2.emit('pong');
+    });
 
     player1.on('sendMyPaddleState', (state) => {
       const buffer = new flatbuffers.ByteBuffer(new Uint8Array(state));
@@ -138,8 +145,12 @@ class GameInstance {
       this.stopGame();
     });
 
-    player1.emit('changeState', JSON.stringify({ gameState: 'Playing', playerNumber: 1 }));
-    player2.emit('changeState', JSON.stringify({ gameState: 'Playing', playerNumber: 2 }));
+    player1.emit('changeState', JSON.stringify({
+      gameState: 'Playing', playerNumber: 1, color: Common.choose([Color.White, Color.Blue, Color.Green])
+    }));
+    player2.emit('changeState', JSON.stringify({
+      gameState: 'Playing', playerNumber: 2, color: Common.choose([Color.White, Color.Blue, Color.Green])
+    }));
 
 
     player1.on('playerIsReady', () => {

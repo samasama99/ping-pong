@@ -2,7 +2,7 @@ import Phaser from 'phaser';
 import 'phaser3-nineslice';
 import { Store } from '@ngrx/store';
 import { SendMyPaddlePosition, StartGame, UpdateOpponentPosition, } from './game-state/game.actions'
-import { GameState, Player } from './game-state/game.state';
+import { Color, GameState, Player } from './game-state/game.state';
 import { selectBallState, selectOpponentPaddleState, selectPlayerScore } from './game-state/game.selectors';
 
 
@@ -24,7 +24,7 @@ export class GameScene extends Phaser.Scene {
   private scoreText2!: Phaser.GameObjects.Text;
   private playerScore1!: number;
   private playerScore2!: number;
-  public star!: Phaser.GameObjects.Image;
+  // public star!: Phaser.GameObjects.Image;
   public win!: Phaser.GameObjects.Image;
   public background!: Phaser.GameObjects.Image;
 
@@ -35,7 +35,7 @@ export class GameScene extends Phaser.Scene {
   private latestOpponentPosition: { x: number; y: number; } = { x: 0, y: 0 };
 
 
-  constructor(private store: Store<GameState>, private playerNumber: Player) {
+  constructor(private store: Store<GameState>, private playerNumber: Player, private color: Color) {
     super({ key: 'game' });
     console.log("constructor", playerNumber)
   }
@@ -47,11 +47,21 @@ export class GameScene extends Phaser.Scene {
   }
 
   preload() {
-    this.load.image('background', 'assets/background.png');
-    this.load.image('paddle', '../assets/paddle.png');
-    this.load.image('ball', '../assets/ball.png');
-    this.load.image('line', '../assets/line.png');
-    this.load.image('star', '../assets/star.png');
+    if (this.color == Color.White) {
+      this.load.image('background', 'assets/white/background.png');
+      this.load.image('paddle', '../assets/white/paddle.png');
+      this.load.image('ball', '../assets/white/ball.png');
+      this.load.image('line', '../assets/white/line.png');
+    } else {
+      if (this.color == Color.Green) {
+        this.load.image('background', 'assets/green/background.png');
+      } else if (this.color == Color.Blue) {
+        this.load.image('background', 'assets/blue/background.png');
+      }
+      this.load.image('paddle', '../assets/paddle.png');
+      this.load.image('ball', '../assets/ball.png');
+      this.load.image('line', '../assets/line.png');
+    }
     this.load.image('win', '../assets/win.png');
   }
 
@@ -86,30 +96,42 @@ export class GameScene extends Phaser.Scene {
 
     this.ball = this.add.image(this.gameWidth / 2, this.gameHeight / 2, 'ball');
     this.win = this.add.image(this.gameWidth / 2, this.gameHeight / 2, 'win').setVisible(false);
-    this.star = this.add.image(this.gameWidth / 2, this.gameHeight / 2, 'star').setVisible(false);
+    // this.star = this.add.image(this.gameWidth / 2, this.gameHeight / 2, 'star').setVisible(false);
 
-    this.star.displayWidth = 784.57; // Set the width to 100 pixels
-    this.star.displayHeight = 523.05; //
+    // this.star.displayWidth = 784.57; // Set the width to 100 pixels
+    // this.star.displayHeight = 523.05; //
 
-    this.star.setDepth(1);
+    // this.star.setDepth(1);
   }
 
   initText() {
-    this.winText = this.add.text(this.gameWidth / 2 - 225, this.gameHeight / 2 - 100, '', { fontSize: '169px', fill: '#fff', fontFamily: 'Montserrat' } as Phaser.Types.GameObjects.Text.TextStyle);
-    this.scoreText1 = this.add.text(555, 20, '0', { fontSize: '40px', fill: '#fff', fontFamily: 'Montserrat' } as Phaser.Types.GameObjects.Text.TextStyle);
-    this.scoreText2 = this.add.text(this.gameWidth - 555, 20, '0', { fontSize: '40px', fill: '#fff', fontFamily: 'Montserrat' } as Phaser.Types.GameObjects.Text.TextStyle).setOrigin(1, 0);
+    this.winText = this.add.text(this.gameWidth / 2 - 220, this.gameHeight / 2 - 100, '', { fontSize: '169px', fill: '#fff', fontFamily: 'Montserrat' } as Phaser.Types.GameObjects.Text.TextStyle);
+    if (this.color == Color.White) {
+      this.scoreText1 = this.add.text(555, 20, '0', { fontSize: '40px', fill: '#184E77', fontFamily: 'Montserrat' } as Phaser.Types.GameObjects.Text.TextStyle);
+      this.scoreText2 = this.add.text(this.gameWidth - 555, 20, '0', { fontSize: '40px', fill: '#184E77', fontFamily: 'Montserrat' } as Phaser.Types.GameObjects.Text.TextStyle).setOrigin(1, 0);
+    } else {
+      this.scoreText1 = this.add.text(555, 20, '0', { fontSize: '40px', fill: '#fff', fontFamily: 'Montserrat' } as Phaser.Types.GameObjects.Text.TextStyle);
+      this.scoreText2 = this.add.text(this.gameWidth - 555, 20, '0', { fontSize: '40px', fill: '#fff', fontFamily: 'Montserrat' } as Phaser.Types.GameObjects.Text.TextStyle).setOrigin(1, 0);
+    }
+
   }
 
+  public pingText!: Phaser.GameObjects.Text;
   create() {
 
+    const textColor = this.color == Color.White ? "#184E77" : "#fff";
 
-    const fpsText = this.add.text(50, 50, '', { fontSize: '40px', fill: '#fff', fontFamily: 'Montserrat' } as Phaser.Types.GameObjects.Text.TextStyle);
+    const fpsText = this.add.text(30, 30, 'Fps: -', { fontSize: '16px', fill: textColor, fontFamily: 'Montserrat' } as Phaser.Types.GameObjects.Text.TextStyle);
     fpsText.setDepth(1);
 
-    // update the text object with the frame rate every second
     setInterval(() => {
-      fpsText.setText(`FPS: ${Math.round(this.game.loop.actualFps)}`);
+      fpsText.setText(`Fps: ${Math.round(this.game.loop.actualFps)}`);
     }, 1000);
+
+    this.pingText = this.add.text(90, 30, 'Ping: -', { fontSize: '16px', fill: textColor, fontFamily: 'Montserrat' } as Phaser.Types.GameObjects.Text.TextStyle);
+    this.pingText.setDepth(1);
+
+
 
 
     this.gameHeight = this.sys.canvas.height;
@@ -141,20 +163,40 @@ export class GameScene extends Phaser.Scene {
         this.scoreText2.setText(`${this.playerScore2}`)
       });
 
+
+    console.log("ball", this.ball.height, this.ball.width);
+    console.log("ball", this.ball.getCenter());
+    console.log("my paddle", this.myPaddle.height, this.myPaddle.width);
+    console.log("my paddle", this.myPaddle.getCenter());
+    console.log("opponent paddle", this.opponentPaddle.height, this.opponentPaddle.width);
+    console.log("opponent paddle", this.opponentPaddle.getCenter());
   }
 
   override update() {
     this.opponentPaddle.setPosition(this.latestOpponentPosition.x, this.latestOpponentPosition.y);
     this.ball.setPosition(this.latestBallPosition.x, this.latestBallPosition.y);
-    this.store.dispatch(SendMyPaddlePosition({ position: { x: this.myPaddle.x, y: this.myPaddle.y } }));
+
     if (this.myPaddle.body?.velocity) {
-      if (this.cursors.up.isDown && this.myPaddle.y - this.myPaddle.height > -29.5) {
-        this.myPaddle.setVelocityY(-this.paddleSpeed);
-      } else if (this.cursors.down.isDown && this.myPaddle.y + this.myPaddle.height < this.gameHeight + 29.5) {
-        this.myPaddle.setVelocityY(this.paddleSpeed);
+
+      const newPaddleVelocity = new Phaser.Math.Vector2(0, 0);
+
+      if (this.cursors.up.isDown) {
+        newPaddleVelocity.y = -this.paddleSpeed;
+      } else if (this.cursors.down.isDown) {
+        newPaddleVelocity.y = this.paddleSpeed;
       } else if (this.myPaddle.body.velocity.y != 0) {
         this.myPaddle.setVelocityY(0);
       }
+
+      const interpolationFactor = 0.2;
+      this.myPaddle.body.velocity.lerp(newPaddleVelocity, interpolationFactor);
+
+      this.myPaddle.setY(Phaser.Math.Clamp(this.myPaddle.y,
+        this.myPaddle.height / 2 + 15,
+        this.gameHeight - this.myPaddle.height / 2 - 15
+      ))
+
+      this.store.dispatch(SendMyPaddlePosition({ position: { x: this.myPaddle.x, y: this.myPaddle.y } }));
     }
   }
 

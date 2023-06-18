@@ -1,5 +1,5 @@
 import { createAction, props } from '@ngrx/store';
-import { GameStateType, Player } from './game.state';
+import { Color, GameStateType, Player } from './game.state';
 
 export const CreateGame = createAction('[Game] Create Game');
 
@@ -16,7 +16,7 @@ export const UpdateOpponentPosition = createAction(
 );
 
 export const UpdateBall = createAction(
-  '[Game] Update Ball',
+  '[Game] Update Ball Position',
   props<{
     ball: { x: number, y: number },
   }>()
@@ -28,7 +28,7 @@ export const UpdateScore = createAction(
 )
 
 export const UpdateGameState = createAction(
-  '[Game] Change State',
+  '[Game] Update Change State',
   props<{
     newState: GameStateType
   }>()
@@ -38,6 +38,12 @@ export const SetPlayerNumber = createAction(
   '[Game] Set Player Number',
   props<{
     playerNumber: Player
+  }>()
+)
+export const SetGameColor = createAction(
+  '[Game] Set Game Color',
+  props<{
+    color: Color
   }>()
 )
 

@@ -9,7 +9,7 @@ import { PositionState } from 'src/position-state';
   providedIn: 'root'
 })
 export class GameService {
-  constructor(private socket: Socket, private store: Store) { }
+  constructor(public socket: Socket, private store: Store) { }
 
   createGame() {
     this.socket.emit('createGame');

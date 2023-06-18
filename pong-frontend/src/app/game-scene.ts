@@ -31,6 +31,8 @@ export class GameScene extends Phaser.Scene {
   public winText!: Phaser.GameObjects.Text;
   private gameHeight = 0;
   private gameWidth = 0;
+  private latestBallPosition: { x: number; y: number; } = { x: 0, y: 0 };
+  private latestOpponentPosition: { x: number; y: number; } = { x: 0, y: 0 };
 
 
   constructor(private store: Store<GameState>, private playerNumber: Player) {
@@ -100,6 +102,16 @@ export class GameScene extends Phaser.Scene {
 
   create() {
 
+
+    const fpsText = this.add.text(50, 50, '', { fontSize: '40px', fill: '#fff', fontFamily: 'Montserrat' } as Phaser.Types.GameObjects.Text.TextStyle);
+    fpsText.setDepth(1);
+
+    // update the text object with the frame rate every second
+    setInterval(() => {
+      fpsText.setText(`FPS: ${Math.round(this.game.loop.actualFps)}`);
+    }, 1000);
+
+
     this.gameHeight = this.sys.canvas.height;
     this.gameWidth = this.sys.canvas.width;
     this.cursors = this.input?.keyboard?.createCursorKeys()!;
@@ -113,14 +125,12 @@ export class GameScene extends Phaser.Scene {
 
     this.store.select(selectOpponentPaddleState)
       .subscribe((position) => {
-        // console.log(position)
-        this.opponentPaddle.setY(position.x);
-        this.opponentPaddle.setY(position.y);
+        this.latestOpponentPosition = { x: position.x, y: position.y };
       });
 
     this.store.select(selectBallState)
-      .subscribe(ballState => {
-        this.ball.setPosition(ballState.x, ballState.y);
+      .subscribe(position => {
+        this.latestBallPosition = { x: position.x, y: position.y };
       });
 
     this.store.select(selectPlayerScore)
@@ -134,10 +144,8 @@ export class GameScene extends Phaser.Scene {
   }
 
   override update() {
-    // if (window.innerWidth < this.gameWidth + 100) {
-    //   this.gameHeight = this.sys.canvas.height;
-    //   this.gameWidth = this.sys.canvas.width;
-    // }
+    this.opponentPaddle.setPosition(this.latestOpponentPosition.x, this.latestOpponentPosition.y);
+    this.ball.setPosition(this.latestBallPosition.x, this.latestBallPosition.y);
     this.store.dispatch(SendMyPaddlePosition({ position: { x: this.myPaddle.x, y: this.myPaddle.y } }));
     if (this.myPaddle.body?.velocity) {
       if (this.cursors.up.isDown && this.myPaddle.y - this.myPaddle.height > -29.5) {

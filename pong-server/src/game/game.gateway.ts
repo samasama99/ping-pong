@@ -8,6 +8,7 @@ import { sampleSize } from 'lodash';
 
 import * as flatbuffers from 'flatbuffers';
 import { PositionState } from 'src/position-state';
+import { constrainedMemory } from 'process';
 
 
 const GAMEWIDTH = 1232;
@@ -18,10 +19,10 @@ const PADDLEHEIGHT = 119;
 const PADDLE1POSITION = { x: 27, y: GAMEHEIGHT / 2 };
 const PADDLE2POSITION = { x: GAMEWIDTH - 27, y: GAMEHEIGHT / 2 };
 const MAXANGLE = Math.PI / 4;
-const INITALBALLSPEED = 9.5;
+const INITALBALLSPEED = 90;
 const DAMPINGFACTOR = 0.99;
 
-enum PlayerNumber { ONE, TWO };
+enum PlayerNumber { One, Two };
 
 
 @WebSocketGateway(3001, {
@@ -71,7 +72,7 @@ class GameInstance {
   private player2Ready: boolean = false;
   private velocity: Matter.Vector;
   private score: { player1: number, player2: number } = { player1: 0, player2: 0 };
-  private speed: number = 9.5;
+  private speed: number = INITALBALLSPEED;
   private checkBallPaddleColisionInterval: NodeJS.Timer;
   public inactive = false;
 
@@ -166,7 +167,7 @@ class GameInstance {
   }
 
   private setPlayerWon(player: PlayerNumber) {
-    if (player == PlayerNumber.ONE) {
+    if (player == PlayerNumber.One) {
       this.player1.emit('changeState', JSON.stringify({ gameState: 'Finished', isWin: true }));
       this.player2.emit('changeState', JSON.stringify({ gameState: 'Finished', isWin: false }));
     } else {
@@ -248,17 +249,36 @@ class GameInstance {
 
   private startGame() {
     console.log("Starting The Engine")
-    this.runner = Runner.run(this.engine);
+    const runner = Runner.create({
+      isFixed: true,
+      delta: 1000 / 480 // Change the time step value here
+    });
+    this.engine.constraintIterations = 10000;
 
-    this.checkBallPaddleColisionInterval = setInterval(() => { this.checkBallPaddleColision() }, 1)
-    Events.on(this.engine, 'beforeUpdate', () => { this.checkBallPaddleColision() });
+    this.runner = Runner.run(runner, this.engine);
+    // this.checkBallPaddleColisionInterval = setInterval(() => { this.checkBallPaddleColision() }, 1)
+    Events.on(this.engine, 'collisionStart', (event) => {
+      const pairs = event.pairs;
+
+      for (let i = 0; i < pairs.length; i++) {
+        const pair = pairs[i];
+        const bodyA = pair.bodyA;
+        const bodyB = pair.bodyB;
+
+        if ((bodyA === this.ball && bodyB === this.paddle1) || (bodyB === this.ball && bodyA === this.paddle1)) {
+          this.checkBallPaddle1Collision();
+        } else if ((bodyA === this.ball && bodyB === this.paddle2) || (bodyB === this.ball && bodyA === this.paddle2)) {
+          this.checkBallPaddle2Collision();
+        }
+      }
+    });
 
     Events.on(this.engine, 'afterUpdate', () => {
       if (this.ball.position.x < 0) {
         this.score.player2 += 1;
         this.updateScore();
         if (this.score.player2 == 7) {
-          this.setPlayerWon(PlayerNumber.TWO);
+          this.setPlayerWon(PlayerNumber.Two);
           this.stopGame();
         } else {
           this.resetBall();
@@ -267,7 +287,7 @@ class GameInstance {
         this.score.player1 += 1;
         this.updateScore();
         if (this.score.player1 == 7) {
-          this.setPlayerWon(PlayerNumber.ONE);
+          this.setPlayerWon(PlayerNumber.One);
           this.stopGame()
         } else {
           this.resetBall();
@@ -280,7 +300,7 @@ class GameInstance {
         Body.setVelocity(this.ball, this.velocity);
       }
 
-      this.checkBallPaddleColision();
+      // this.checkBallPaddleColision();
 
       this.sendBallPosition();
 
@@ -295,6 +315,7 @@ class GameInstance {
 
   private sendBallPosition() {
     Body.setVelocity(this.ball, this.velocity);
+    // console.log("velocity", ball.velocity)
 
     const builder = new flatbuffers.Builder();
     const ballStateOffset = PositionState.createPositionState(builder, this.ball.position.x, this.ball.position.y);
@@ -305,38 +326,32 @@ class GameInstance {
     this.player2.emit('updateBallState', buffer);
   }
 
-  private checkBallPaddleColision() {
-    {
-      const dx = this.ball.position.x - this.paddle1.position.x;
-      const dy = this.ball.position.y - this.paddle1.position.y;
+  private checkBallPaddle1Collision() {
+    const dx = this.ball.position.x - this.paddle1.position.x;
+    const dy = this.ball.position.y - this.paddle1.position.y;
 
-      if (Math.abs(dx) <= (this.ball.circleRadius + PADDLEWIDTH / 2) && Math.abs(dy) <= (BALLRADIUS + PADDLEHEIGHT / 2)) {
-        const angle = Math.atan2(dy, dx);
+    const angle = Math.atan2(dy, dx);
 
-        const limitedAngle = Math.max(-MAXANGLE, Math.min(angle, MAXANGLE));
+    const limitedAngle = Math.max(-MAXANGLE, Math.min(angle, MAXANGLE));
 
-        this.velocity.x = Math.cos(limitedAngle) * this.speed;
-        this.velocity.y = Math.sin(limitedAngle) * this.speed;
-        Body.setVelocity(this.ball, this.velocity);
-        this.speed += 0.1;
-      }
-    }
-    {
-      const dx = this.ball.position.x - this.paddle2.position.x;
-      const dy = this.ball.position.y - this.paddle2.position.y;
+    this.velocity.x = Math.cos(limitedAngle) * this.speed;
+    this.velocity.y = Math.sin(limitedAngle) * this.speed;
+    Body.setVelocity(this.ball, this.velocity);
+    this.speed += 5;
+  }
 
-      if (Math.abs(dx) <= (BALLRADIUS + PADDLEWIDTH / 2) && Math.abs(dy) <= (BALLRADIUS + PADDLEHEIGHT / 2)) {
-        const angle = Math.atan2(dy, dx);
+  private checkBallPaddle2Collision() {
+    const dx = this.ball.position.x - this.paddle2.position.x;
+    const dy = this.ball.position.y - this.paddle2.position.y;
 
-        const limitedAngle = Math.max(-MAXANGLE, Math.min(angle, MAXANGLE));
+    const angle = Math.atan2(dy, dx);
 
-        this.velocity.x = -Math.cos(limitedAngle) * this.speed;
-        this.velocity.y = Math.sin(limitedAngle) * this.speed;
-        Body.setVelocity(this.ball, this.velocity);
-        this.speed += 0.1;
-      }
+    const limitedAngle = Math.max(-MAXANGLE, Math.min(angle, MAXANGLE));
 
-    }
+    this.velocity.x = -Math.cos(limitedAngle) * this.speed;
+    this.velocity.y = Math.sin(limitedAngle) * this.speed;
+    Body.setVelocity(this.ball, this.velocity);
+    this.speed += 5;
   }
 
   private getNewStart(gameWidth, gameHeight) {

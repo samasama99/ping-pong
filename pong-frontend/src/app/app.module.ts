@@ -10,7 +10,7 @@ import { StoreDevtoolsModule } from '@ngrx/store-devtools';
 import { SocketIoConfig, SocketIoModule } from 'ngx-socket-io';
 import { GameEffects } from './game-state/game.effects';
 
-const config: SocketIoConfig = { url: 'http://10.12.6.10:3001' };
+const config: SocketIoConfig = { url: 'localhost:3001' };
 
 // const config: SocketIoConfig = { url: 'ws://localhost:3004', options: { transports: ['websocket'] } };
 

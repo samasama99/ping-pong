@@ -33,6 +33,13 @@ export class GameComponent implements OnInit {
         arcade: {
         }
       },
+      fps: {
+        min: 60,
+        target: 60, // set the target frame rate to 60 FPS
+        // forceSetTimeOut: true // use setTimeout for the game loop
+        deltaHistory: 10,
+        smoothStep: true,
+      },
       scale: {
         mode: Phaser.Scale.WIDTH_CONTROLS_HEIGHT,
         autoCenter: Phaser.Scale.CENTER_BOTH,

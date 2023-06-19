@@ -6,8 +6,10 @@ import { Store } from '@ngrx/store';
 import { Color, GameState, GameStateType, Player } from '../game-state/game.state';
 import { Socket } from 'ngx-socket-io';
 import { GameService } from '../game.service';
-import { CreateGame, SetGameColor, SetPlayerNumber, UpdateGameState } from '../game-state/game.actions';
-import { selectAllState, selectGameState } from '../game-state/game.selectors';
+import { CreateGame, SetGameColor, SetPlayerNumber, UpdateBall, UpdateGameState, UpdateOpponentPosition, UpdateScore } from '../game-state/game.actions';
+import { selectGameState } from '../game-state/game.selectors';
+import { PositionState } from 'src/position-state';
+import * as flatbuffers from 'flatbuffers';
 
 @Component({
   selector: 'app-game',
@@ -17,11 +19,10 @@ import { selectAllState, selectGameState } from '../game-state/game.selectors';
 export class GameComponent implements OnInit {
   private game!: Phaser.Game;
   private config: Phaser.Types.Core.GameConfig;
-  private store: Store<GameState> = inject(Store);
   private gameScene!: GameScene;
-  public gameState = this.store.select(selectAllState);
+  // public gameState$ = this.store.select(selectAllState);
 
-  constructor(private gameService: GameService) {
+  constructor(private store: Store<GameState>, private gameService: GameService) {
     this.config = {
       type: Phaser.AUTO,
       width: 1232,
@@ -79,9 +80,32 @@ export class GameComponent implements OnInit {
                   this.gameScene.pingText.setText(`Ping: ${latency}ms`);
                 });
               }, 5000);
-              this.gameService.updateBallStateEvent();
-              this.gameService.updateOpponentPaddle();
-              this.gameService.updatePlayerScoreEvent();
+              this.gameService.updateBallStateEvent()
+                .subscribe((state) => {
+                  const buffer = new flatbuffers.ByteBuffer(new Uint8Array(state));
+                  const ballState = PositionState.getRootAsPositionState(buffer);
+
+                  const x = ballState.x();
+                  const y = ballState.y();
+                  this.store.dispatch(UpdateBall({ ball: { x, y } }));
+                });
+              this.gameService.updateOpponentPaddle()
+                .subscribe((state) => {
+                  const buffer = new flatbuffers.ByteBuffer(new Uint8Array(state));
+                  const paddleState = PositionState.getRootAsPositionState(buffer);
+
+                  const x = paddleState.x();
+                  const y = paddleState.y();
+                  this.store.dispatch(UpdateOpponentPosition({ position: { x, y } }));
+                });
+              this.gameService.updatePlayerScoreEvent()
+                .subscribe((payload) => {
+                  const score: {
+                    player1: number, player2: number
+                  } = JSON.parse(payload);
+                  console.log("score parsed", score);
+                  this.store.dispatch(UpdateScore({ score }));
+                })
               this.gameService.playerIsReady()
             }
             break;

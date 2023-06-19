@@ -1,31 +1,32 @@
 import { NgModule, isDevMode } from '@angular/core';
 import { BrowserModule } from '@angular/platform-browser';
-import { reducer } from './game-state/game.reducer';
-
 import { AppComponent } from './app.component';
+import { LoginComponent } from './login/login.component';
+import { FormsModule } from '@angular/forms';
+import { HttpClientModule } from '@angular/common/http';
 import { StoreModule } from '@ngrx/store';
+import { GameModule } from './game/game.module';
 import { EffectsModule } from '@ngrx/effects';
-import { GameComponent } from './game/game.component';
-import { StoreDevtoolsModule } from '@ngrx/store-devtools';
-import { SocketIoConfig, SocketIoModule } from 'ngx-socket-io';
-import { GameEffects } from './game-state/game.effects';
 
-const config: SocketIoConfig = { url: 'localhost:3001' };
+// const config: SocketIoConfig = { url: 'localhost:3001' };
 
 // const config: SocketIoConfig = { url: 'ws://localhost:3004', options: { transports: ['websocket'] } };
 
 @NgModule({
   declarations: [
     AppComponent,
-    GameComponent,
+    LoginComponent,
   ],
   imports: [
     BrowserModule,
+    FormsModule,
+    HttpClientModule,
+    // StoreModule.forRoot({}), // add StoreModule here
+    // EffectsModule.forRoot([]),
+    GameModule,
     // StoreModule.forRoot({}, {}),
-    EffectsModule.forRoot([GameEffects]),
-    StoreModule.forRoot({ game: reducer }),
     // StoreDevtoolsModule.instrument({ maxAge: 25, logOnly: !isDevMode() }),
-    SocketIoModule.forRoot(config)
+    // SocketIoModule.forRoot(config)
   ],
   providers: [],
   bootstrap: [AppComponent]

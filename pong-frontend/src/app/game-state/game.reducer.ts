@@ -30,6 +30,6 @@ export const gameReducer = createReducer(
 
 );
 
-export function reducer(state: GameState = initialState, action: Action): GameState {
-  return gameReducer(state, action);
-}
+// export function reducer(state: GameState = initialState, action: Action): GameState {
+//   return gameReducer(state, action);
+// }

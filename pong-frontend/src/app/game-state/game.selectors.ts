@@ -1,26 +1,25 @@
-import { createSelector } from '@ngrx/store';
+import { createSelector, createFeatureSelector } from '@ngrx/store';
+import { GameState } from './game.state';
 
-export const selectGame = (state: any) => state;
+export const selectGameState = createFeatureSelector<GameState>('game');
 
-export const selectAllState = createSelector(selectGame, (state) => state.game);
+export const selectMyPaddleState = createSelector(
+  selectGameState,
+  (state) => state.myPaddle
+);
 
-export const selectOpponentPaddleState = createSelector(selectGame, (state) => state.game.opponentPaddle);
+export const selectOpponentPaddleState = createSelector(
+  selectGameState,
+  (state) => state.opponentPaddle
+);
 
-export const selectBallState = createSelector(selectGame, (state) => state.game.ball);
-
-export const selectGameState = createSelector(
-  selectGame,
-  (state) => state.game.state
+export const selectBallState = createSelector(
+  selectGameState,
+  (state) => state.ball
 );
 
 export const selectPlayerScore = createSelector(
-  selectGame,
-  (state) => state.game.score
+  selectGameState,
+  (state) => state.score
 );
-
-export const selectPlayerNumber = createSelector(
-  selectGame,
-  (state) => state.game.playerNumber
-);
-
 

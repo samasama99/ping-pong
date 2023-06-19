@@ -1,0 +1,19 @@
+<div *ngIf="!user ; else logged">
+  <p>login</p>
+  <input [(ngModel)]="username_login" />
+  <button (click)='logIn()'>log</button>
+
+  <p>create user</p>
+  <input [(ngModel)]="username_create" />
+  <button (click)='createUser()'>create</button>
+</div>
+
+<ng-template #logged>
+  <h1>Hello {{user.username}}</h1>
+  <ul *ngFor="let user of (users$ | async)">
+    <li>{{user | json}}</li>
+    <ul *ngFor="let match of user.matches">
+      <li>{{match | json}}</li>
+    </ul>
+  </ul>
+</ng-template>

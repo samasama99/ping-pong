@@ -9,7 +9,12 @@ import { PositionState } from 'src/position-state';
   providedIn: 'root'
 })
 export class GameService {
-  constructor(public socket: Socket, private store: Store) { }
+
+  public socket = new Socket({ url: 'localhost:3001' });
+
+  constructor() {
+    console.log("game service constructed");
+  }
 
   createGame() {
     this.socket.emit('createGame');
@@ -26,35 +31,15 @@ export class GameService {
   }
 
   updateOpponentPaddle() {
-    this.socket.fromEvent<ArrayBuffer>('updateOpponentPaddle').subscribe((state) => {
-      const buffer = new flatbuffers.ByteBuffer(new Uint8Array(state));
-      const paddleState = PositionState.getRootAsPositionState(buffer);
-
-      const x = paddleState.x();
-      const y = paddleState.y();
-      this.store.dispatch(UpdateOpponentPosition({ position: { x, y } }));
-    });
+    return this.socket.fromEvent<ArrayBuffer>('updateOpponentPaddle');
   }
 
   updateBallStateEvent() {
-    this.socket.fromEvent<ArrayBuffer>('updateBallState').subscribe((state) => {
-      const buffer = new flatbuffers.ByteBuffer(new Uint8Array(state));
-      const ballState = PositionState.getRootAsPositionState(buffer);
-
-      const x = ballState.x();
-      const y = ballState.y();
-      this.store.dispatch(UpdateBall({ ball: { x, y } }));
-    });
+    return this.socket.fromEvent<ArrayBuffer>('updateBallState');
   }
 
   updatePlayerScoreEvent() {
-    this.socket.fromEvent<string>('UpdateScore').subscribe((payload) => {
-      const score: {
-        player1: number, player2: number
-      } = JSON.parse(payload);
-      console.log("score parsed", score);
-      this.store.dispatch(UpdateScore({ score }));
-    })
+    return this.socket.fromEvent<string>('UpdateScore');
   }
 
   playerIsReady() {

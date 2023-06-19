@@ -3,13 +3,11 @@ import { GameScene } from '../game-scene';
 import Phaser, { Scene } from 'phaser';
 import 'phaser3-nineslice';
 import { Store } from '@ngrx/store';
-import { Color, GameState, GameStateType, Player } from '../game-state/game.state';
-import { Socket } from 'ngx-socket-io';
+import { Color, GameState, GameStateType, Player, } from '../game-state/game.state';
 import { GameService } from '../game.service';
-import { CreateGame, SetGameColor, SetPlayerNumber, UpdateBall, UpdateGameState, UpdateOpponentPosition, UpdateScore } from '../game-state/game.actions';
-import { selectGameState } from '../game-state/game.selectors';
 import { PositionState } from 'src/position-state';
 import * as flatbuffers from 'flatbuffers';
+import { CreateGame, SetColor, SetPlayerNumber, UpdateBall, UpdateGameState, UpdateOpponentPosition, UpdateScore } from '../game-state/game.reducer';
 
 @Component({
   selector: 'app-game',
@@ -57,13 +55,13 @@ export class GameComponent implements OnInit {
         console.log({ payload });
         const state: { gameState: GameStateType, playerNumber: Player, isWin: boolean, color: Color } = JSON.parse(payload);
         if (state.gameState) {
-          this.store.dispatch(UpdateGameState({ newState: state.gameState }));
+          this.store.dispatch(UpdateGameState(state.gameState));
         }
         if (state.playerNumber) {
-          this.store.dispatch(SetPlayerNumber({ playerNumber: state.playerNumber }));
+          this.store.dispatch(SetPlayerNumber(state.playerNumber));
         }
         if (state.color) {
-          this.store.dispatch(SetGameColor({ color: state.color }));
+          this.store.dispatch(SetColor(state.color));
         }
         switch (state.gameState) {
           case GameStateType.Playing: {
@@ -87,7 +85,7 @@ export class GameComponent implements OnInit {
 
                   const x = ballState.x();
                   const y = ballState.y();
-                  this.store.dispatch(UpdateBall({ ball: { x, y } }));
+                  this.store.dispatch(UpdateBall({ x, y }));
                 });
               this.gameService.updateOpponentPaddle()
                 .subscribe((state) => {
@@ -96,7 +94,7 @@ export class GameComponent implements OnInit {
 
                   const x = paddleState.x();
                   const y = paddleState.y();
-                  this.store.dispatch(UpdateOpponentPosition({ position: { x, y } }));
+                  this.store.dispatch(UpdateOpponentPosition({ x, y }));
                 });
               this.gameService.updatePlayerScoreEvent()
                 .subscribe((payload) => {
@@ -104,7 +102,7 @@ export class GameComponent implements OnInit {
                     player1: number, player2: number
                   } = JSON.parse(payload);
                   console.log("score parsed", score);
-                  this.store.dispatch(UpdateScore({ score }));
+                  this.store.dispatch(UpdateScore(score));
                 })
               this.gameService.playerIsReady()
             }
@@ -131,3 +129,4 @@ export class GameComponent implements OnInit {
 
   }
 }
+

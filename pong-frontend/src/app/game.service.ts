@@ -1,7 +1,5 @@
 import { Injectable } from '@angular/core';
-import { Store } from '@ngrx/store';
 import { Socket } from 'ngx-socket-io';
-import { UpdateBall, UpdateOpponentPosition, UpdateScore } from './game-state/game.actions';
 import * as flatbuffers from 'flatbuffers';
 import { PositionState } from 'src/position-state';
 

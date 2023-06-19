@@ -1,35 +1,47 @@
-import { Action, createReducer, on } from '@ngrx/store';
-import { GameState, initialState } from './game.state';
-import { UpdateGameState, CreateGame, SendMyPaddlePosition, UpdateBall, UpdateScore, UpdateOpponentPosition, SetPlayerNumber, } from './game.actions';
+import { PayloadAction, createSlice } from '@reduxjs/toolkit';
+import { Color, GameState, GameStateType, Player, Position, Score, initialState } from './game.state';
 
-export type vector = { x: number, y: number };
 
-export const gameReducer = createReducer(
+const game = createSlice({
+  name: "game",
   initialState,
-  on(CreateGame, state => ({ ...state })),
-  on(SendMyPaddlePosition, (state, { position }) => ({
-    ...state,
-    myPaddle: { x: position.x, y: position.y }
-  })),
-  on(UpdateOpponentPosition, (state, { position }) => ({
-    ...state,
-    opponentPaddle: { x: position.x, y: position.y }
-  })),
-  on(UpdateBall, (state, { ball }) =>
-    ({ ...state, ball: ball })
-  ),
-  on(UpdateScore, (state, { score }) =>
-    ({ ...state, score })
-  ),
-  on(UpdateGameState, (state, { newState }) =>
-    ({ ...state, state: newState })
-  ),
-  on(SetPlayerNumber, (state, { playerNumber }) =>
-    ({ ...state, playerNumber })
-  ),
+  reducers: {
+    CreateGame: () => { },
+    SendMyPaddlePosition: (state: GameState, action: PayloadAction<Position>) => {
+      state.myPaddle = action.payload;
+    },
+    UpdateOpponentPosition: (state: GameState, action: PayloadAction<Position>) => {
+      state.opponentPaddle = action.payload;
+    },
+    UpdateBall: (state: GameState, action: PayloadAction<Position>) => {
+      state.ball = action.payload;
+    },
+    UpdateScore: (state: GameState, action: PayloadAction<Score>) => {
+      state.score = action.payload;
+    },
+    UpdateGameState: (state: GameState, action: PayloadAction<GameStateType>) => {
+      state.state = action.payload;
+    },
+    SetPlayerNumber: (state: GameState, action: PayloadAction<Player>) => {
+      state.playerNumber = action.payload;
+    },
+    SetColor: (state: GameState, action: PayloadAction<Color>) => {
+      state.color = action.payload;
+    },
+  }
+});
 
-);
-
-// export function reducer(state: GameState = initialState, action: Action): GameState {
-//   return gameReducer(state, action);
-// }
+export const {
+  reducer,
+  actions: {
+    CreateGame,
+    SendMyPaddlePosition,
+    UpdateOpponentPosition,
+    UpdateBall,
+    UpdateScore,
+    UpdateGameState,
+    SetPlayerNumber,
+    SetColor
+  },
+  name
+} = game;

@@ -18,7 +18,7 @@ export const selectBallState = createSelector(
   (state) => state.ball
 );
 
-export const selectPlayerScore = createSelector(
+export const selectScoreState = createSelector(
   selectGameState,
   (state) => state.score
 );

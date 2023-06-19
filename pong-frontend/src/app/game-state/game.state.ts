@@ -1,5 +1,3 @@
-// export type GameStateType = 'pending' | 'in queue' | 'player1' | 'player2' | 'finished';
-
 export enum GameStateType {
   Created = "Created",
   Queue = "Queue",
@@ -11,6 +9,7 @@ export enum GameStateType {
 export enum Player { NotSetYet = 0, One = 1, Two = 2 };
 export type Position = { x: number, y: number };
 export enum Color { White = 'White', Blue = 'Blue', Green = 'Green' };
+export type Score = { player1: number, player2: number };
 
 
 export interface GameState {
@@ -32,5 +31,3 @@ export const initialState: GameState = {
   playerNumber: Player.NotSetYet,
   color: Color.White,
 };
-
-

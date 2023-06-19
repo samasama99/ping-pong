@@ -7,6 +7,7 @@ import { HttpClientModule } from '@angular/common/http';
 import { StoreModule } from '@ngrx/store';
 import { GameModule } from './game/game.module';
 import { EffectsModule } from '@ngrx/effects';
+import { StoreDevtoolsModule } from '@ngrx/store-devtools';
 
 // const config: SocketIoConfig = { url: 'localhost:3001' };
 
@@ -25,7 +26,6 @@ import { EffectsModule } from '@ngrx/effects';
     // EffectsModule.forRoot([]),
     GameModule,
     // StoreModule.forRoot({}, {}),
-    // StoreDevtoolsModule.instrument({ maxAge: 25, logOnly: !isDevMode() }),
     // SocketIoModule.forRoot(config)
   ],
   providers: [],

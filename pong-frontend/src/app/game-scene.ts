@@ -1,9 +1,9 @@
 import Phaser from 'phaser';
 import 'phaser3-nineslice';
 import { Store } from '@ngrx/store';
-import { SendMyPaddlePosition, StartGame, UpdateOpponentPosition, } from './game-state/game.actions'
-import { Color, GameState, Player } from './game-state/game.state';
-import { selectBallState, selectOpponentPaddleState, selectPlayerScore } from './game-state/game.selectors';
+import { Color, GameState, Player, } from './game-state/game.state';
+import { selectBallState, selectOpponentPaddleState, selectScoreState } from './game-state/game.selectors';
+import { SendMyPaddlePosition, UpdateOpponentPosition } from './game-state/game.reducer';
 
 
 export class GameScene extends Phaser.Scene {
@@ -42,7 +42,7 @@ export class GameScene extends Phaser.Scene {
 
   init() {
     console.log("init")
-    this.store.dispatch(StartGame());
+    // this.store.dispatch(StartGame());
     console.log("Player Number", this.playerNumber);
   }
 
@@ -90,8 +90,8 @@ export class GameScene extends Phaser.Scene {
     }
 
     if (this.myPaddle?.body && this.opponentPaddle?.body) {
-      this.store.dispatch(SendMyPaddlePosition({ position: { x: this.myPaddle.x, y: this.myPaddle.y } }));
-      this.store.dispatch(UpdateOpponentPosition({ position: { x: this.opponentPaddle.x, y: this.opponentPaddle.y } }))
+      this.store.dispatch(SendMyPaddlePosition({ x: this.myPaddle.x, y: this.myPaddle.y }));
+      this.store.dispatch(UpdateOpponentPosition({ x: this.opponentPaddle.x, y: this.opponentPaddle.y }))
     }
 
     this.ball = this.add.image(this.gameWidth / 2, this.gameHeight / 2, 'ball');
@@ -152,7 +152,7 @@ export class GameScene extends Phaser.Scene {
         this.latestBallPosition = { x: position.x, y: position.y };
       });
 
-    this.store.select(selectPlayerScore)
+    this.store.select(selectScoreState)
       .subscribe(score => {
         this.playerScore1 = score.player1;
         this.playerScore2 = score.player2;
@@ -193,7 +193,7 @@ export class GameScene extends Phaser.Scene {
         this.gameHeight - this.myPaddle.height / 2 - 15
       ))
 
-      this.store.dispatch(SendMyPaddlePosition({ position: { x: this.myPaddle.x, y: this.myPaddle.y } }));
+      this.store.dispatch(SendMyPaddlePosition({ x: this.myPaddle.x, y: this.myPaddle.y }));
     }
   }
 

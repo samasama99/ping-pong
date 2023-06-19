@@ -1,14 +1,10 @@
-import { WebSocketGateway, SubscribeMessage } from '@nestjs/websockets';
+import { WebSocketGateway, SubscribeMessage, OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect } from '@nestjs/websockets';
 import { Bodies, Body, Common, Engine, Events, Runner, World, } from 'matter-js';
-import { queue } from 'rxjs';
-import { TimeInterval } from 'rxjs/internal/operators/timeInterval';
 import { Socket } from 'socket.io';
-// import * as Matter from 'matter-js'
 import { sampleSize } from 'lodash';
 
 import * as flatbuffers from 'flatbuffers';
 import { PositionState } from 'src/position-state';
-import { constrainedMemory } from 'process';
 export enum Color { White = 'White', Blue = 'Blue', Green = 'Green' };
 
 
@@ -32,7 +28,8 @@ enum PlayerNumber { One, Two };
     credentials: true,
   }
 })
-export class GameGateway {
+export class GameGateway
+  implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect {
   private queue: Array<Socket> = [];
   private activeGameInstances: GameInstance[] = []
 
@@ -49,6 +46,16 @@ export class GameGateway {
       }
       // console.log("after", process.memoryUsage())
     }, 1000);
+  }
+
+  handleDisconnect(client: any) {
+    console.log("client id", client.id);
+  }
+  handleConnection(client: any, ...args: any[]) {
+    console.log("client id", client.id);
+  }
+  afterInit(server: any) {
+    console.log("after init");
   }
 
   @SubscribeMessage('createGame')

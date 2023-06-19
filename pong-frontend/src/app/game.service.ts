@@ -44,5 +44,4 @@ export class GameService {
     this.socket.emit('playerIsReady');
   }
 
-
 }

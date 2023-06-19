@@ -25,6 +25,9 @@ export class UserService {
     });
   }
 
+  async findOneByUsername(username: string): Promise<User> {
+    return this.userRepository.findOne({ where: { username } });
+  }
   // update(id: number, updateUserDto: UpdateUserDto) {
   //   return `This action updates a #${id} user`;
   // }

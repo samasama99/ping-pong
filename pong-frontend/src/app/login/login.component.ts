@@ -1,7 +1,7 @@
 import { Component, inject } from '@angular/core';
 import { LoginService, User } from '../login.service';
 import { GameService } from '../game.service';
-import { Observable } from 'rxjs';
+import { Observable, combineLatest, map } from 'rxjs';
 
 @Component({
   selector: 'app-login',
@@ -15,12 +15,25 @@ export class LoginComponent {
   public user!: User;
   public gameIsCreated: boolean = false;
   public users$: Observable<User[]>;
-  public onlineUsers$ = this.loginService.getOnlineUsers();
-  private gameService !: GameService;
+  public matches$!: Observable<any>;
+  public onlineUsersIds$;
+  private gameService!: GameService;
+  public filteredUsers$;
 
   constructor(private loginService: LoginService) {
     this.users$ = this.loginService.getUsers();
     this.loginService.gameIsCreated().subscribe(_ => { this.gameIsCreated = _ });
+    this.onlineUsersIds$ = this.loginService.getOnlineUsers();
+    this.filteredUsers$ = combineLatest(this.users$, this.onlineUsersIds$).pipe(
+      map(([users, _onlineIds]) => {
+        const onlineIds = JSON.parse(_onlineIds as string);
+        return users.filter(u =>
+          onlineIds.includes(u.id) && (!this.user || u.id !== this.user.id)
+        );
+      }),
+    );
+    this.gameService = new GameService(this.loginService);
+
   }
 
   public logIn() {
@@ -37,22 +50,15 @@ export class LoginComponent {
   public createUser() {
     if (!this.username_create)
       return;
-    this.loginService.createUser(this.username_create).subscribe(u => this.user = u);
+    this.loginService.createUser(this.username_create).subscribe();
   }
 
   public createGameWith(opponentId: number) {
-    if (!this.gameService && this.user) {
-      this.gameService = new GameService(this.loginService);
-    }
-    if (this.gameService)
-      this.gameService.createGame(this.user.id, opponentId);
+    this.gameService.createGame(this.user.id, opponentId);
   }
 
   public createRandomGame() {
-    if (!this.gameService && this.user) {
-      this.gameService = new GameService(this.loginService);
-      this.gameService.createGame(this.user.id);
-    }
+    this.gameService.createGame(this.user.id);
   }
 }
 

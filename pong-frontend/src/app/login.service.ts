@@ -51,12 +51,13 @@ export class LoginService {
   public getUsers() {
     return this.httpClient.get<User[]>(this.url_base);
   }
+
   public gameIsCreated() {
     return this.gameIsCreated$;
   }
 
   public getOnlineUsers() {
-    return this.socket.fromEvent<ArrayBuffer>('updateOnlineList');
+    return this.socket.fromEvent('updateOnlineList');
   }
 
   public addToOnline(id: number) {

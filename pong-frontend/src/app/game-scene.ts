@@ -36,7 +36,7 @@ export class GameScene extends Phaser.Scene {
 
 
   constructor(private store: Store<GameState>, private playerNumber: Player, private color: Color) {
-    super({ key: 'game' });
+    super({ key: 'GameScene' });
     console.log("constructor", playerNumber)
   }
 

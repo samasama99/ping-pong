@@ -13,12 +13,14 @@ export class LoginComponent {
   public username_login = '';
   public username_create = '';
   public user!: User;
+  public gameIsCreated: boolean = false;
   public users$: Observable<User[]>;
   public onlineUsers$ = this.loginService.getOnlineUsers();
   private gameService !: GameService;
 
   constructor(private loginService: LoginService) {
     this.users$ = this.loginService.getUsers();
+    this.loginService.gameIsCreated().subscribe(_ => { this.gameIsCreated = _ });
   }
 
   public logIn() {
@@ -40,7 +42,7 @@ export class LoginComponent {
 
   public createGameWith(opponentId: number) {
     if (!this.gameService && this.user) {
-      this.gameService = new GameService();
+      this.gameService = new GameService(this.loginService);
     }
     if (this.gameService)
       this.gameService.createGame(this.user.id, opponentId);
@@ -48,7 +50,7 @@ export class LoginComponent {
 
   public createRandomGame() {
     if (!this.gameService && this.user) {
-      this.gameService = new GameService();
+      this.gameService = new GameService(this.loginService);
       this.gameService.createGame(this.user.id);
     }
   }

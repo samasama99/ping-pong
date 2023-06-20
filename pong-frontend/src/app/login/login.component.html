@@ -1,25 +1,32 @@
-<div *ngIf="!user; else logged">
-  <p>login</p>
-  <input [(ngModel)]="username_login" />
-  <button (click)="logIn()">log</button>
+<div *ngIf="!gameIsCreated; else gameOn">
+  <div *ngIf="!user; else logged;">
+    <p>login</p>
+    <input [(ngModel)]="username_login" />
+    <button (click)="logIn()">log</button>
 
-  <p>create user</p>
-  <input [(ngModel)]="username_create" />
-  <button (click)="createUser()">create</button>
-</div>
-
-<ng-template #logged>
-  <h1>Hello {{ user.username }}</h1>
-  <ul *ngFor="let u of users$ | async">
-    <li>{{u | json}} <button (click)="createGameWith(u.id)">VS</button> </li>
-    <ul *ngFor="let match of u.matches">
-      <li>{{match | json}}</li>
-    </ul>
-  </ul>
-
-  <div>
-    {{onlineUsers$ | async | json}}
+    <p>create user</p>
+    <input [(ngModel)]="username_create" />
+    <button (click)="createUser()">create</button>
   </div>
 
-  <button (click)="createRandomGame()">Play Random Game</button>
+  <ng-template #logged>
+    <h1>Hello {{ user.username }}</h1>
+    <ul *ngFor="let u of users$ | async">
+      <li>{{u | json}} <button [disabled]="u.id === user.id" (click)="createGameWith(u.id)">VS</button>
+      </li>
+      <ul *ngFor="let match of u.matches">
+        <li>{{match | json}}</li>
+      </ul>
+    </ul>
+
+    <div>
+      {{onlineUsers$ | async | json}}
+    </div>
+
+    <button (click)="createRandomGame()">Play Random Game</button>
+  </ng-template>
+</div>
+
+<ng-template #gameOn>
+  <app-game></app-game>
 </ng-template>

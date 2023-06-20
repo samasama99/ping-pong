@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Socket } from 'ngx-socket-io';
+import { BehaviorSubject } from 'rxjs';
 
 export type User = {
   id: number;
@@ -20,14 +21,22 @@ export type Match = {
   providedIn: 'root'
 })
 export class LoginService {
-  private socket = new Socket({ url: 'localhost:3002' });
+  public socket = new Socket({ url: 'localhost:3001' });
   private url_base = 'http://localhost:3000/user';
+  private gameIsCreated$ = new BehaviorSubject<boolean>(false);
 
   constructor(private httpClient: HttpClient) {
     this.socket.on('invite', (inviterId: string) => {
       const id = parseInt(inviterId);
       const response = confirm(`You have been invited by player ${id}. Do you accept?`);
-      // this.socket.emit('inviteResponse', { inviterId, accepted: response });
+      console.log("res", response);
+      this.socket.emit('inviteResponse', response);
+      // if (response)
+      //   this.gameIsCreated$.next(true);
+    });
+    this.socket.on('acceptedInvite', () => {
+      console.log("acceptedInvite")
+      this.gameIsCreated$.next(true);
     });
   };
 
@@ -41,6 +50,9 @@ export class LoginService {
 
   public getUsers() {
     return this.httpClient.get<User[]>(this.url_base);
+  }
+  public gameIsCreated() {
+    return this.gameIsCreated$;
   }
 
   public getOnlineUsers() {

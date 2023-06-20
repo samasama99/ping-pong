@@ -31,7 +31,7 @@ enum PlayerNumber { One, Two };
   }
 })
 export class GameGateway
-  implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect {
+  implements OnGatewayDisconnect {
   private queue: Array<{ id: number, socket: Socket }> = [];
   private currentPlayers = new Array<{ id: number, socket: Socket }>();
   private activeGameInstances: { [key: string]: GameInstance } = {};
@@ -51,6 +51,8 @@ export class GameGateway
 
       if (this.queue.length >= 2) {
         let [player1, player2]: { id: number, socket: Socket }[] = sampleSize(this.queue, 2);
+        player1.socket.emit('acceptedInvite')
+        player2.socket.emit('acceptedInvite')
         this.queue = this.queue.filter(player => player.id !== player1.id && player.id !== player2.id);
         this.activeGameInstances[`${player1.id},${player2.id}`] = new GameInstance(player1.socket, player2.socket);
         this.currentPlayers.push(player1);
@@ -60,15 +62,15 @@ export class GameGateway
     }, 1000);
   }
 
-  handleDisconnect(client: any) {
-    console.log("client id", client.id);
+  handleDisconnect(socket: any) {
+    this.userService.handleDisconnect(socket);
   }
-  handleConnection(client: any, ...args: any[]) {
-    console.log("client id", client.id);
+
+  @SubscribeMessage('logIn')
+  logIn(socket: Socket, payload: string) {
+    this.userService.logIn(socket, payload);
   }
-  afterInit(server: any) {
-    console.log("after init");
-  }
+
 
   @SubscribeMessage('createGame')
   create(socket: Socket, payload) {
@@ -87,12 +89,23 @@ export class GameGateway
       });
       socket.emit('changeState', JSON.stringify({ gameState: 'Queue' }));
     } else {
-
-      console.log("online list", this.userService.onlineUsers)
-      const user = this.userService.onlineUsers.find(_ => _.id === id2);
-      if (user) {
-        user.socket.emit('invite', id1);
-        console.log('user is online', user);
+      // console.log("online list", this.userService.onlineUsers)
+      const invitedUser = this.userService.onlineUsers.find(_ => _.id === id2);
+      if (invitedUser) {
+        invitedUser.socket.emit('invite', id1);
+        invitedUser.socket.once('inviteResponse', (response) => {
+          console.log("res", response);
+          if (response === true) {
+            const player1 = this.userService.onlineUsers.find(_ => _.id === id1);
+            player1.socket.emit('acceptedInvite')
+            const player2 = this.userService.onlineUsers.find(_ => _.id === id2);
+            player2.socket.emit('acceptedInvite')
+            this.activeGameInstances[`${player1.id},${player2.id}`] = new GameInstance(player1.socket, player2.socket);
+            this.currentPlayers.push(player1);
+            this.currentPlayers.push(player2);
+          }
+        })
+        console.log('user is online', invitedUser.id);
       } else {
         console.log('user is offline', id2);
       }
@@ -115,7 +128,10 @@ class GameInstance {
   private checkBallPaddleColisionInterval: NodeJS.Timer;
   public inactive = false;
 
+
+
   constructor(private player1: Socket, private player2: Socket) {
+    console.log("game is created (start)");
     this.engine = Engine.create();
     this.world = this.engine.world;
 
@@ -213,6 +229,7 @@ class GameInstance {
       }
     });
 
+    console.log("game is created (finish)");
   }
 
   private setPlayerWon(player: PlayerNumber) {

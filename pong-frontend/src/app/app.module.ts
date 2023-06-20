@@ -8,6 +8,7 @@ import { StoreModule } from '@ngrx/store';
 import { GameModule } from './game/game.module';
 import { EffectsModule } from '@ngrx/effects';
 import { StoreDevtoolsModule } from '@ngrx/store-devtools';
+import { GameComponent } from './game/game.component';
 
 // const config: SocketIoConfig = { url: 'localhost:3001' };
 
@@ -17,12 +18,13 @@ import { StoreDevtoolsModule } from '@ngrx/store-devtools';
   declarations: [
     AppComponent,
     LoginComponent,
+    // GameComponent
   ],
   imports: [
     BrowserModule,
     FormsModule,
     HttpClientModule,
-    // GameModule,
+    GameModule,
   ],
   providers: [],
   bootstrap: [AppComponent]

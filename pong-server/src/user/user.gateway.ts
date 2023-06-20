@@ -1,4 +1,7 @@
-import { WebSocketGateway, WebSocketServer, OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect } from '@nestjs/websockets';
+import { Injectable } from '@nestjs/common';
+import { WebSocketGateway, WebSocketServer, OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect, SubscribeMessage } from '@nestjs/websockets';
+import { Socket } from 'socket.io';
+import { UserService } from './user.service';
 
 @WebSocketGateway(3002, {
   cors: {
@@ -9,6 +12,7 @@ import { WebSocketGateway, WebSocketServer, OnGatewayInit, OnGatewayConnection, 
 export class UserGateway implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect {
 
   // @WebSocketServer() server: Server;
+  constructor(private userService: UserService) { }
 
   afterInit(server: any) {
     console.log('WebSocket server initialized');
@@ -18,8 +22,14 @@ export class UserGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
     console.log(`Client connected: ${client.id}`);
   }
 
-  handleDisconnect(client: any) {
-    console.log(`Client disconnected: ${client.id}`);
+  handleDisconnect(socket: any) {
+    console.log(`Client disconnected: ${socket.id}`);
+    this.userService.handleDisconnect(socket);
+  }
+
+  @SubscribeMessage('logIn')
+  logIn(socket: Socket, payload: string) {
+    this.userService.logIn(socket, payload);
   }
 
 }

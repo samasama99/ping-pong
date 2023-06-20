@@ -5,6 +5,8 @@ import { sampleSize } from 'lodash';
 
 import * as flatbuffers from 'flatbuffers';
 import { PositionState } from 'src/position-state';
+import { UserService } from 'src/user/user.service';
+import { Inject } from '@nestjs/common';
 export enum Color { White = 'White', Blue = 'Blue', Green = 'Green' };
 
 
@@ -30,19 +32,29 @@ enum PlayerNumber { One, Two };
 })
 export class GameGateway
   implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect {
-  private queue: Array<Socket> = [];
-  private activeGameInstances: GameInstance[] = []
+  private queue: Array<{ id: number, socket: Socket }> = [];
+  private currentPlayers = new Array<{ id: number, socket: Socket }>();
+  private activeGameInstances: { [key: string]: GameInstance } = {};
 
-  constructor() {
+  constructor(private userService: UserService) {
     setInterval(() => {
-      // console.log("queue size", this.queue.length);
-      // console.log("active game instances", this.activeGameInstances.length);
+      console.log("queue :", this.queue.map(_ => _.id));
+      console.log("active game instances :", Object.keys(this.activeGameInstances));
+      console.log("current players :", this.currentPlayers.map(_ => _.id));
       // console.log("before", process.memoryUsage())
-      this.activeGameInstances = this.activeGameInstances.filter(game => !game.inactive);
+      this.activeGameInstances = Object.entries(this.activeGameInstances)
+        .filter(([_, gameInstance]) => !gameInstance.inactive)
+        .reduce((result, [key, value]) => {
+          result[key] = value;
+          return result;
+        }, {});
+
       if (this.queue.length >= 2) {
-        let [player1, player2]: Socket[] = sampleSize(this.queue, 2);
-        this.queue = this.queue.filter(player => player !== player1 && player !== player2);
-        this.activeGameInstances.push(new GameInstance(player1, player2));
+        let [player1, player2]: { id: number, socket: Socket }[] = sampleSize(this.queue, 2);
+        this.queue = this.queue.filter(player => player.id !== player1.id && player.id !== player2.id);
+        this.activeGameInstances[`${player1.id},${player2.id}`] = new GameInstance(player1.socket, player2.socket);
+        this.currentPlayers.push(player1);
+        this.currentPlayers.push(player2);
       }
       // console.log("after", process.memoryUsage())
     }, 1000);
@@ -59,13 +71,32 @@ export class GameGateway
   }
 
   @SubscribeMessage('createGame')
-  create(socket: Socket) {
-    this.queue.push(socket)
-    socket.on('disconnect', () => {
-      this.queue = this.queue.filter(player => player.id != socket.id);
-      socket.removeAllListeners('disconnect');
-    });
-    socket.emit('changeState', JSON.stringify({ gameState: 'Queue' }));
+  create(socket: Socket, payload) {
+    const { id1, id2 } = JSON.parse(payload);
+    console.log({ id1, id2 });
+    if (this.currentPlayers.find(player => player.id === id1))
+      return;
+    if (id2 && this.currentPlayers.find(player => player.id === id2))
+      return;
+    if (!id2) {
+      this.queue.push({ id: id1, socket })
+      socket.on('disconnect', () => {
+        this.queue = this.queue.filter(player => player.socket !== socket);
+        this.currentPlayers = this.currentPlayers.filter(player => player.socket !== socket);
+        socket.removeAllListeners('disconnect');
+      });
+      socket.emit('changeState', JSON.stringify({ gameState: 'Queue' }));
+    } else {
+
+      console.log("online list", this.userService.onlineUsers)
+      const user = this.userService.onlineUsers.find(_ => _.id === id2);
+      if (user) {
+        user.socket.emit('invite', id1);
+        console.log('user is online', user);
+      } else {
+        console.log('user is offline', id2);
+      }
+    }
   }
 }
 
@@ -185,7 +216,7 @@ class GameInstance {
   }
 
   private setPlayerWon(player: PlayerNumber) {
-    if (player == PlayerNumber.One) {
+    if (player === PlayerNumber.One) {
       this.player1.emit('changeState', JSON.stringify({ gameState: 'Finished', isWin: true }));
       this.player2.emit('changeState', JSON.stringify({ gameState: 'Finished', isWin: false }));
     } else {

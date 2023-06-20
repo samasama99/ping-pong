@@ -16,7 +16,7 @@ import { reducer } from '../game-state/game.reducer';
     EffectsModule.forRoot([GameEffects]),
     StoreDevtoolsModule.instrument({ maxAge: 25, logOnly: !isDevMode() }),
   ],
-  providers: [GameService],
+  providers: [],
   exports: [GameComponent],
 })
 export class GameModule { }

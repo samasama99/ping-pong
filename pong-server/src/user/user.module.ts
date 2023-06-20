@@ -10,6 +10,6 @@ import { UserGateway } from './user.gateway';
   imports: [TypeOrmModule.forFeature([User, Match])],
   controllers: [UserController],
   providers: [UserGateway, UserService],
-  exports: [TypeOrmModule.forFeature([User])],
+  exports: [TypeOrmModule.forFeature([User, Match]), UserService],
 })
 export class UserModule { }

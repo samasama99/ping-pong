@@ -8,10 +8,8 @@ import { Socket } from 'ngx-socket-io';
   styleUrls: ['./app.component.css']
 })
 export class AppComponent {
-  login: Socket;
 
   constructor() {
-    this.login = new Socket({ url: 'localhost:3002' });
   }
 
   sendMessage() {

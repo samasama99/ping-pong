@@ -22,11 +22,7 @@ import { StoreDevtoolsModule } from '@ngrx/store-devtools';
     BrowserModule,
     FormsModule,
     HttpClientModule,
-    // StoreModule.forRoot({}), // add StoreModule here
-    // EffectsModule.forRoot([]),
-    GameModule,
-    // StoreModule.forRoot({}, {}),
-    // SocketIoModule.forRoot(config)
+    // GameModule,
   ],
   providers: [],
   bootstrap: [AppComponent]

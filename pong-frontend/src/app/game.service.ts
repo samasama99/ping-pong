@@ -7,15 +7,17 @@ import { PositionState } from 'src/position-state';
   providedIn: 'root'
 })
 export class GameService {
-
   public socket = new Socket({ url: 'localhost:3001' });
 
   constructor() {
     console.log("game service constructed");
   }
 
-  createGame() {
-    this.socket.emit('createGame');
+  createGame(id1: number, id2?: number) {
+    this.socket.emit('createGame', JSON.stringify({ id1, id2 }));
+  }
+
+  getState() {
     return this.socket.fromEvent<string>('changeState')
   }
 

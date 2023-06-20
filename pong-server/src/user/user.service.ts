@@ -4,10 +4,31 @@ import { UpdateUserDto } from './dto/update-user.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { User } from './entities/user.entity';
 import { Repository } from 'typeorm';
+import { Socket } from 'socket.io';
+import { DefaultEventsMap } from 'socket.io/dist/typed-events';
 
 @Injectable()
 export class UserService {
-  constructor(@InjectRepository(User) private userRepository: Repository<User>) { };
+  public onlineUsers: Array<{ id: number, socket: Socket }> = [];
+
+  constructor(@InjectRepository(User) private userRepository: Repository<User>) {
+    console.log("UserService", Date.now());
+  };
+
+  handleDisconnect(socket: any) {
+    this.onlineUsers = this.onlineUsers.filter(_ => _.socket !== socket);
+    this.onlineUsers
+      .forEach(_ => _.socket.emit('updateOnlineList', JSON.stringify(this.onlineUsers.map(_ => _.id))))
+  }
+
+  logIn(socket: Socket<DefaultEventsMap, DefaultEventsMap, DefaultEventsMap, any>, payload: string) {
+    const id = parseInt(payload);
+    if (this.onlineUsers.find(_ => _.id === id))
+      return;
+    this.onlineUsers.push({ id, socket });
+    this.onlineUsers
+      .forEach(_ => _.socket.emit('updateOnlineList', JSON.stringify(this.onlineUsers.map(_ => _.id))))
+  }
 
   async create(createUserDto: CreateUserDto) {
     const user = this.userRepository.create({ ...createUserDto });

@@ -1,4 +1,4 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, ViewChild, inject } from '@angular/core';
 import { GameScene } from '../game-scene';
 import Phaser, { Scene } from 'phaser';
 import 'phaser3-nineslice';
@@ -8,6 +8,8 @@ import { GameService } from '../game.service';
 import { PositionState } from 'src/position-state';
 import * as flatbuffers from 'flatbuffers';
 import { CreateGame, SetColor, SetPlayerNumber, UpdateBall, UpdateGameState, UpdateOpponentPosition, UpdateScore } from '../game-state/game.reducer';
+import { LoginComponent } from '../login/login.component';
+import { LoginService } from '../login.service';
 
 @Component({
   selector: 'app-game',
@@ -50,7 +52,7 @@ export class GameComponent implements OnInit {
   ngOnInit() {
     this.store.dispatch(CreateGame());
     this.game = new Phaser.Game(this.config);
-    this.gameService.createGame()
+    this.gameService.getState()
       .subscribe(payload => {
         console.log({ payload });
         const state: { gameState: GameStateType, playerNumber: Player, isWin: boolean, color: Color } = JSON.parse(payload);

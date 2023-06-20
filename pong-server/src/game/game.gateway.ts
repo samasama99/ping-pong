@@ -51,8 +51,8 @@ export class GameGateway
 
       if (this.queue.length >= 2) {
         let [player1, player2]: { id: number, socket: Socket }[] = sampleSize(this.queue, 2);
-        player1.socket.emit('acceptedInvite')
-        player2.socket.emit('acceptedInvite')
+        player1.socket.emit('startTheGame')
+        player2.socket.emit('startTheGame')
         this.queue = this.queue.filter(player => player.id !== player1.id && player.id !== player2.id);
         this.activeGameInstances[`${player1.id},${player2.id}`] = new GameInstance(player1.socket, player2.socket);
         this.currentPlayers.push(player1);
@@ -64,6 +64,11 @@ export class GameGateway
 
   handleDisconnect(socket: any) {
     this.userService.handleDisconnect(socket);
+    socket.on('disconnect', () => {
+      this.queue = this.queue.filter(player => player.socket !== socket);
+      this.currentPlayers = this.currentPlayers.filter(player => player.socket !== socket);
+      socket.removeAllListeners('disconnect');
+    });
   }
 
   @SubscribeMessage('logIn')
@@ -82,11 +87,6 @@ export class GameGateway
       return;
     if (!id2) {
       this.queue.push({ id: id1, socket })
-      socket.on('disconnect', () => {
-        this.queue = this.queue.filter(player => player.socket !== socket);
-        this.currentPlayers = this.currentPlayers.filter(player => player.socket !== socket);
-        socket.removeAllListeners('disconnect');
-      });
       socket.emit('changeState', JSON.stringify({ gameState: 'Queue' }));
     } else {
       // console.log("online list", this.userService.onlineUsers)
@@ -97,9 +97,9 @@ export class GameGateway
           console.log("res", response);
           if (response === true) {
             const player1 = this.userService.onlineUsers.find(_ => _.id === id1);
-            player1.socket.emit('acceptedInvite')
             const player2 = this.userService.onlineUsers.find(_ => _.id === id2);
-            player2.socket.emit('acceptedInvite')
+            player2.socket.emit('startTheGame')
+            player1.socket.emit('startTheGame')
             this.activeGameInstances[`${player1.id},${player2.id}`] = new GameInstance(player1.socket, player2.socket);
             this.currentPlayers.push(player1);
             this.currentPlayers.push(player2);

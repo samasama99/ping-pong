@@ -34,8 +34,8 @@ export class LoginService {
       // if (response)
       //   this.gameIsCreated$.next(true);
     });
-    this.socket.on('acceptedInvite', () => {
-      console.log("acceptedInvite")
+    this.socket.on('startTheGame', () => {
+      console.log("startTheGame")
       this.gameIsCreated$.next(true);
     });
   };

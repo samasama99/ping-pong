@@ -1,4 +1,4 @@
-import { Component, OnInit, ViewChild, inject } from '@angular/core';
+import { AfterViewInit, Component, OnInit, ViewChild, inject } from '@angular/core';
 import { GameScene } from '../game-scene';
 import Phaser, { Scene } from 'phaser';
 import 'phaser3-nineslice';
@@ -16,7 +16,7 @@ import { LoginService } from '../login.service';
   templateUrl: './game.component.html',
   styleUrls: ['./game.component.css']
 })
-export class GameComponent implements OnInit {
+export class GameComponent implements AfterViewInit {
   private game!: Phaser.Game;
   private config: Phaser.Types.Core.GameConfig;
   private gameScene!: GameScene;
@@ -49,7 +49,7 @@ export class GameComponent implements OnInit {
     };
   }
 
-  ngOnInit() {
+  ngAfterViewInit() {
     this.store.dispatch(CreateGame());
     this.game = new Phaser.Game(this.config);
     this.gameService.getState()
@@ -70,43 +70,47 @@ export class GameComponent implements OnInit {
             if (!this.gameScene) {
               console.log("create GameScene");
               this.gameScene = new GameScene(this.store, state.playerNumber, state.color ?? Color.White);
+              console.log(this.gameScene);
               this.game.scene.add('GameScene', this.gameScene);
-              this.gameScene.scene.start();
-              setInterval(() => {
-                const startTime = Date.now();
-                this.gameService.socket.emit('ping');
-                this.gameService.socket.once('pong', () => {
-                  const latency = Date.now() - startTime;
-                  this.gameScene.pingText.setText(`Ping: ${latency}ms`);
-                });
-              }, 5000);
-              this.gameService.updateBallStateEvent()
-                .subscribe((state) => {
-                  const buffer = new flatbuffers.ByteBuffer(new Uint8Array(state));
-                  const ballState = PositionState.getRootAsPositionState(buffer);
 
-                  const x = ballState.x();
-                  const y = ballState.y();
-                  this.store.dispatch(UpdateBall({ x, y }));
-                });
-              this.gameService.updateOpponentPaddle()
-                .subscribe((state) => {
-                  const buffer = new flatbuffers.ByteBuffer(new Uint8Array(state));
-                  const paddleState = PositionState.getRootAsPositionState(buffer);
+              setTimeout(() => {
+                this.gameScene.scene.start();
+                setInterval(() => {
+                  const startTime = Date.now();
+                  this.gameService.socket.emit('ping');
+                  this.gameService.socket.once('pong', () => {
+                    const latency = Date.now() - startTime;
+                    this.gameScene.pingText.setText(`Ping: ${latency}ms`);
+                  });
+                }, 5000);
+                this.gameService.updateBallStateEvent()
+                  .subscribe((state) => {
+                    const buffer = new flatbuffers.ByteBuffer(new Uint8Array(state));
+                    const ballState = PositionState.getRootAsPositionState(buffer);
 
-                  const x = paddleState.x();
-                  const y = paddleState.y();
-                  this.store.dispatch(UpdateOpponentPosition({ x, y }));
-                });
-              this.gameService.updatePlayerScoreEvent()
-                .subscribe((payload) => {
-                  const score: {
-                    player1: number, player2: number
-                  } = JSON.parse(payload);
-                  console.log("score parsed", score);
-                  this.store.dispatch(UpdateScore(score));
-                })
-              this.gameService.playerIsReady()
+                    const x = ballState.x();
+                    const y = ballState.y();
+                    this.store.dispatch(UpdateBall({ x, y }));
+                  });
+                this.gameService.updateOpponentPaddle()
+                  .subscribe((state) => {
+                    const buffer = new flatbuffers.ByteBuffer(new Uint8Array(state));
+                    const paddleState = PositionState.getRootAsPositionState(buffer);
+
+                    const x = paddleState.x();
+                    const y = paddleState.y();
+                    this.store.dispatch(UpdateOpponentPosition({ x, y }));
+                  });
+                this.gameService.updatePlayerScoreEvent()
+                  .subscribe((payload) => {
+                    const score: {
+                      player1: number, player2: number
+                    } = JSON.parse(payload);
+                    console.log("score parsed", score);
+                    this.store.dispatch(UpdateScore(score));
+                  })
+                this.gameService.playerIsReady()
+              }, 100);
             }
             break;
           }

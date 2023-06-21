@@ -28,11 +28,8 @@ export class LoginService {
   constructor(private httpClient: HttpClient) {
     this.socket.on('invite', (inviterId: string) => {
       const id = parseInt(inviterId);
-      const response = confirm(`You have been invited by player ${id}. Do you accept?`);
-      console.log("res", response);
+      const response = confirm(`You have been invited by player id ${id}. Do you accept?`);
       this.socket.emit('inviteResponse', response);
-      // if (response)
-      //   this.gameIsCreated$.next(true);
     });
     this.socket.on('startTheGame', () => {
       console.log("startTheGame")

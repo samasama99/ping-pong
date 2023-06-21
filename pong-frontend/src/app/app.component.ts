@@ -1,6 +1,4 @@
-import { Component, OnInit } from '@angular/core';
-import { GameScene } from './game-scene'; // Import your Phaser scene
-import { Socket } from 'ngx-socket-io';
+import { Component } from '@angular/core';
 
 @Component({
   selector: 'app-root',

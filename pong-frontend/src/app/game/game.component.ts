@@ -1,22 +1,20 @@
 import { AfterViewInit, Component, OnInit, ViewChild, inject } from '@angular/core';
-import { GameScene } from '../game-scene';
-import Phaser, { Scene } from 'phaser';
+import { GameScene } from './game.scene';
+import Phaser from 'phaser';
 import 'phaser3-nineslice';
 import { Store } from '@ngrx/store';
-import { Color, GameState, GameStateType, Player, } from '../game-state/game.state';
+import { Color, GameState, GameStateType, Player, } from './game-state/game.state';
 import { GameService } from '../game.service';
 import { PositionState } from 'src/position-state';
 import * as flatbuffers from 'flatbuffers';
-import { CreateGame, SetColor, SetPlayerNumber, UpdateBall, UpdateGameState, UpdateOpponentPosition, UpdateScore } from '../game-state/game.reducer';
-import { LoginComponent } from '../login/login.component';
-import { LoginService } from '../login.service';
+import { CreateGame, SetColor, SetPlayerNumber, UpdateBall, UpdateGameState, UpdateOpponentPosition, UpdateScore } from './game-state/game.reducer';
 
 @Component({
   selector: 'app-game',
   templateUrl: './game.component.html',
   styleUrls: ['./game.component.css']
 })
-export class GameComponent implements AfterViewInit {
+export class GameComponent implements OnInit {
   private game!: Phaser.Game;
   private config: Phaser.Types.Core.GameConfig;
   private gameScene!: GameScene;
@@ -49,7 +47,7 @@ export class GameComponent implements AfterViewInit {
     };
   }
 
-  ngAfterViewInit() {
+  ngOnInit() {
     this.store.dispatch(CreateGame());
     this.game = new Phaser.Game(this.config);
     this.gameService.getState()

@@ -1,6 +1,6 @@
 import { Injectable } from "@angular/core";
 import { Actions, createEffect, ofType } from "@ngrx/effects";
-import { GameService } from "../game.service";
+import { GameService } from "../../game.service";
 import { tap } from "rxjs";
 import { SendMyPaddlePosition } from "./game.reducer";
 

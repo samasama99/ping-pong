@@ -3,47 +3,38 @@ import 'phaser3-nineslice';
 import { Store } from '@ngrx/store';
 import { Color, GameState, Player, } from './game-state/game.state';
 import { selectBallState, selectOpponentPaddleState, selectScoreState } from './game-state/game.selectors';
-import { SendMyPaddlePosition, UpdateOpponentPosition } from './game-state/game.reducer';
+import { SendMyPaddlePosition, StartGame, UpdateOpponentPosition } from './game-state/game.reducer';
 
 
 export class GameScene extends Phaser.Scene {
-  readonly paddleSpeed: number = 950; // Adjust the paddle speed as needed
-  // readonly inital_ball_speed = 650;
+  readonly paddleSpeed: number = 950;
+  readonly interpolationFactor = 0.2;
 
-  // private wallUp!: Phaser.Physics.Arcade.Image;
-  // private wallDown!: Phaser.Physics.Arcade.Image;
+  private gameHeight = 0;
+  private gameWidth = 0;
 
   private myPaddle!: Phaser.Physics.Arcade.Image;
   private opponentPaddle!: Phaser.Physics.Arcade.Image;
-
   private ball!: Phaser.GameObjects.Image;
 
   private cursors!: Phaser.Types.Input.Keyboard.CursorKeys;
 
-  private scoreText1!: Phaser.GameObjects.Text;
-  private scoreText2!: Phaser.GameObjects.Text;
-  private playerScore1!: number;
-  private playerScore2!: number;
-  // public star!: Phaser.GameObjects.Image;
+  public scoreText1!: Phaser.GameObjects.Text;
+  public scoreText2!: Phaser.GameObjects.Text;
+  public latestBallPosition: { x: number; y: number; } = { x: 0, y: 0 };
+  public latestOpponentPosition: { x: number; y: number; } = { x: 0, y: 0 };
   public win!: Phaser.GameObjects.Image;
   public background!: Phaser.GameObjects.Image;
-
   public winText!: Phaser.GameObjects.Text;
-  private gameHeight = 0;
-  private gameWidth = 0;
-  private latestBallPosition: { x: number; y: number; } = { x: 0, y: 0 };
-  private latestOpponentPosition: { x: number; y: number; } = { x: 0, y: 0 };
-
+  public pingText!: Phaser.GameObjects.Text;
 
   constructor(private store: Store<GameState>, private playerNumber: Player, private color: Color) {
     super({ key: 'GameScene' });
-    console.log("constructor", playerNumber)
+    console.log("create GameScene");
   }
 
   init() {
-    console.log("init")
-    // this.store.dispatch(StartGame());
-    console.log("Player Number", this.playerNumber);
+    this.store.dispatch(StartGame());
   }
 
   preload() {
@@ -65,22 +56,16 @@ export class GameScene extends Phaser.Scene {
     this.load.image('win', '../assets/win.png');
   }
 
-  // private getRandomNumber(min: number, max: number) {
-  //   return Phaser.Math.Between(min, max)
-  // }
-
   setupGameObject() {
     switch (this.playerNumber) {
       case Player.One:
         {
-          console.log("init control PlayerOne")
           this.myPaddle = this.physics.add.image(27, this.gameHeight / 2, 'paddle');
           this.opponentPaddle = this.physics.add.image(this.gameWidth - 27, this.gameHeight / 2, 'paddle');
           break;
         }
       case Player.Two:
         {
-          console.log("init control PlayerTwo")
           this.myPaddle = this.physics.add.image(this.gameWidth - 27, this.gameHeight / 2, 'paddle');
           this.opponentPaddle = this.physics.add.image(27, this.gameHeight / 2, 'paddle');
           break;
@@ -96,12 +81,6 @@ export class GameScene extends Phaser.Scene {
 
     this.ball = this.add.image(this.gameWidth / 2, this.gameHeight / 2, 'ball');
     this.win = this.add.image(this.gameWidth / 2, this.gameHeight / 2, 'win').setVisible(false);
-    // this.star = this.add.image(this.gameWidth / 2, this.gameHeight / 2, 'star').setVisible(false);
-
-    // this.star.displayWidth = 784.57; // Set the width to 100 pixels
-    // this.star.displayHeight = 523.05; //
-
-    // this.star.setDepth(1);
   }
 
   initText() {
@@ -114,23 +93,17 @@ export class GameScene extends Phaser.Scene {
       this.scoreText2 = this.add.text(this.gameWidth - 555, 20, '0', { fontSize: '40px', fill: '#fff', fontFamily: 'Montserrat' } as Phaser.Types.GameObjects.Text.TextStyle).setOrigin(1, 0);
     }
 
-  }
-
-  public pingText!: Phaser.GameObjects.Text;
-  create() {
-
     const textColor = this.color == Color.White ? "#184E77" : "#fff";
-
     const fpsText = this.add.text(30, 30, 'Fps: -', { fontSize: '16px', fill: textColor, fontFamily: 'Montserrat' } as Phaser.Types.GameObjects.Text.TextStyle);
     fpsText.setDepth(1);
-
     setInterval(() => {
       fpsText.setText(`Fps: ${Math.round(this.game.loop.actualFps)}`);
     }, 1000);
-
     this.pingText = this.add.text(90, 30, 'Ping: -', { fontSize: '16px', fill: textColor, fontFamily: 'Montserrat' } as Phaser.Types.GameObjects.Text.TextStyle);
     this.pingText.setDepth(1);
+  }
 
+  create() {
     this.gameHeight = this.sys.canvas.height;
     this.gameWidth = this.sys.canvas.width;
     this.cursors = this.input?.keyboard?.createCursorKeys()!;
@@ -154,19 +127,9 @@ export class GameScene extends Phaser.Scene {
 
     this.store.select(selectScoreState)
       .subscribe(score => {
-        this.playerScore1 = score.player1;
-        this.playerScore2 = score.player2;
-        this.scoreText1.setText(`${this.playerScore1}`)
-        this.scoreText2.setText(`${this.playerScore2}`)
+        this.scoreText1.setText(`${score.player1}`)
+        this.scoreText2.setText(`${score.player2}`)
       });
-
-
-    console.log("ball", this.ball.height, this.ball.width);
-    console.log("ball", this.ball.getCenter());
-    console.log("my paddle", this.myPaddle.height, this.myPaddle.width);
-    console.log("my paddle", this.myPaddle.getCenter());
-    console.log("opponent paddle", this.opponentPaddle.height, this.opponentPaddle.width);
-    console.log("opponent paddle", this.opponentPaddle.getCenter());
   }
 
   override update() {
@@ -185,8 +148,7 @@ export class GameScene extends Phaser.Scene {
         this.myPaddle.setVelocityY(0);
       }
 
-      const interpolationFactor = 0.2;
-      this.myPaddle.body.velocity.lerp(newPaddleVelocity, interpolationFactor);
+      this.myPaddle.body.velocity.lerp(newPaddleVelocity, this.interpolationFactor);
 
       this.myPaddle.setY(Phaser.Math.Clamp(this.myPaddle.y,
         this.myPaddle.height / 2 + 15,

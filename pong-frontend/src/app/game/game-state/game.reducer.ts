@@ -7,6 +7,7 @@ const game = createSlice({
   initialState,
   reducers: {
     CreateGame: () => { },
+    StartGame: () => { },
     SendMyPaddlePosition: (state: GameState, action: PayloadAction<Position>) => {
       state.myPaddle = action.payload;
     },
@@ -35,6 +36,7 @@ export const {
   reducer,
   actions: {
     CreateGame,
+    StartGame,
     SendMyPaddlePosition,
     UpdateOpponentPosition,
     UpdateBall,

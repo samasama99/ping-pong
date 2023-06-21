@@ -1,4 +1,4 @@
-import { AfterViewInit, Component, OnInit, ViewChild, inject } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { GameScene } from './game.scene';
 import Phaser from 'phaser';
 import 'phaser3-nineslice';
@@ -9,6 +9,9 @@ import { PositionState } from 'src/position-state';
 import * as flatbuffers from 'flatbuffers';
 import { CreateGame, SetColor, SetPlayerNumber, UpdateBall, UpdateGameState, UpdateOpponentPosition, UpdateScore } from './game-state/game.reducer';
 
+const RESOLUTION = { width: 1232, height: 685 };
+const TARGET_FPS = 60;
+
 @Component({
   selector: 'app-game',
   templateUrl: './game.component.html',
@@ -18,14 +21,13 @@ export class GameComponent implements OnInit {
   private game!: Phaser.Game;
   private config: Phaser.Types.Core.GameConfig;
   private gameScene!: GameScene;
-  // public gameState$ = this.store.select(selectAllState);
 
   constructor(private store: Store<GameState>, private gameService: GameService) {
     this.config = {
       type: Phaser.AUTO,
-      width: 1232,
-      height: 685,
-      // backgroundColor: '#103960',
+      width: RESOLUTION.width,
+      height: RESOLUTION.height,
+      backgroundColor: '#103960',
       parent: 'game-container',
       physics: {
         default: 'arcade',
@@ -33,8 +35,8 @@ export class GameComponent implements OnInit {
         }
       },
       fps: {
-        min: 60,
-        target: 60, // set the target frame rate to 60 FPS
+        min: TARGET_FPS,
+        target: TARGET_FPS,
         deltaHistory: 10,
         smoothStep: true,
       },
@@ -66,49 +68,46 @@ export class GameComponent implements OnInit {
         switch (state.gameState) {
           case GameStateType.Playing: {
             if (!this.gameScene) {
-              console.log("create GameScene");
               this.gameScene = new GameScene(this.store, state.playerNumber, state.color ?? Color.White);
-              console.log(this.gameScene);
+
+              setInterval(() => {
+                const startTime = Date.now();
+                this.gameService.socket.emit('ping');
+                this.gameService.socket.once('pong', () => {
+                  const latency = Date.now() - startTime;
+                  this.gameScene.pingText.setText(`Ping: ${latency}ms`);
+                });
+              }, 2000);
+              this.gameService.updateBallStateEvent()
+                .subscribe((state) => {
+                  const buffer = new flatbuffers.ByteBuffer(new Uint8Array(state));
+                  const ballState = PositionState.getRootAsPositionState(buffer);
+
+                  const x = ballState.x();
+                  const y = ballState.y();
+                  this.store.dispatch(UpdateBall({ x, y }));
+                });
+              this.gameService.updateOpponentPaddle()
+                .subscribe((state) => {
+                  const buffer = new flatbuffers.ByteBuffer(new Uint8Array(state));
+                  const paddleState = PositionState.getRootAsPositionState(buffer);
+
+                  const x = paddleState.x();
+                  const y = paddleState.y();
+                  this.store.dispatch(UpdateOpponentPosition({ x, y }));
+                });
+              this.gameService.updatePlayerScoreEvent()
+                .subscribe((payload) => {
+                  const score: {
+                    player1: number, player2: number
+                  } = JSON.parse(payload);
+                  console.log("score parsed", score);
+                  this.store.dispatch(UpdateScore(score));
+                })
+
               this.game.scene.add('GameScene', this.gameScene);
-
-              setTimeout(() => {
-                setInterval(() => {
-                  const startTime = Date.now();
-                  this.gameService.socket.emit('ping');
-                  this.gameService.socket.once('pong', () => {
-                    const latency = Date.now() - startTime;
-                    this.gameScene.pingText.setText(`Ping: ${latency}ms`);
-                  });
-                }, 5000);
-                this.gameService.updateBallStateEvent()
-                  .subscribe((state) => {
-                    const buffer = new flatbuffers.ByteBuffer(new Uint8Array(state));
-                    const ballState = PositionState.getRootAsPositionState(buffer);
-
-                    const x = ballState.x();
-                    const y = ballState.y();
-                    this.store.dispatch(UpdateBall({ x, y }));
-                  });
-                this.gameService.updateOpponentPaddle()
-                  .subscribe((state) => {
-                    const buffer = new flatbuffers.ByteBuffer(new Uint8Array(state));
-                    const paddleState = PositionState.getRootAsPositionState(buffer);
-
-                    const x = paddleState.x();
-                    const y = paddleState.y();
-                    this.store.dispatch(UpdateOpponentPosition({ x, y }));
-                  });
-                this.gameService.updatePlayerScoreEvent()
-                  .subscribe((payload) => {
-                    const score: {
-                      player1: number, player2: number
-                    } = JSON.parse(payload);
-                    console.log("score parsed", score);
-                    this.store.dispatch(UpdateScore(score));
-                  })
-                this.gameScene.scene.start();
-                this.gameService.playerIsReady()
-              }, 100);
+              this.gameScene.scene.start();
+              this.gameService.playerIsReady()
             }
             break;
           }
@@ -125,7 +124,6 @@ export class GameComponent implements OnInit {
             break;
           }
           default: {
-            //statements;
             break;
           }
         }

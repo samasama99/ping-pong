@@ -31,7 +31,6 @@ export class GameService {
       console.log("queue :", this.queue.map(_ => _.id));
       console.log("active game instances :", Object.keys(this.activeGameInstances));
       console.log("current players :", this.currentPlayers.map(_ => _.id));
-      // console.log("before", process.memoryUsage())
       Object.entries(this.activeGameInstances).forEach(([key, value]) => {
         if (value.inactive) {
           const player1Id: number = parseInt(key.split(',')[0]);

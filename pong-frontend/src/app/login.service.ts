@@ -21,8 +21,8 @@ export type Match = {
   providedIn: 'root'
 })
 export class LoginService {
-  public socket = new Socket({ url: '10.12.8.7:3001' });
-  private url_base = 'http://10.12.8.7:3000/user';
+  public socket = new Socket({ url: '10.12.5.5:3001' });
+  private url_base = 'http://10.12.5.5:3000/user';
   private gameIsCreated$ = new BehaviorSubject<boolean>(false);
 
   constructor(private httpClient: HttpClient) {

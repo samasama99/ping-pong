@@ -13,7 +13,9 @@
     <h1>Hello {{ user.username }}</h1>
     <h2>Online Player :</h2>
     <ul *ngFor="let u of filteredUsers$ | async">
-      <li>{{u.id}} : {{u.username}} <button (click)="createGameWith(u.id)">VS</button></li>
+      <ng-container *ngIf="u.id !== user.id">
+        <li>{{u.id}} : {{u.username}} <button (click)="createGameWith(u.id)">VS</button></li>
+      </ng-container>
     </ul>
 
     <h2>Match History :</h2>

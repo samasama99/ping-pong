@@ -16,24 +16,14 @@ export class MatchService {
 
   async create(createMatchDto: CreateMatchDto) {
     console.log("dto", createMatchDto);
-    {
-      const match = new Match();
-      match.player = await this.userService.findOne(createMatchDto.player1Id);
-      match.player1Id = createMatchDto.player1Id;
-      match.player2Id = createMatchDto.player2Id;
-      match.winnerId = createMatchDto.winnerId;
-      console.log("match", match)
-      this.matchRepository.save(match);
-    }
-    {
-      const match = new Match();
-      match.player = await this.userService.findOne(createMatchDto.player2Id);
-      match.player1Id = createMatchDto.player1Id;
-      match.player2Id = createMatchDto.player2Id;
-      match.winnerId = createMatchDto.winnerId;
-      console.log("match", match)
-      this.matchRepository.save(match);
-    }
+    const match = new Match();
+    match.player1Id = createMatchDto.player1Id;
+    match.player2Id = createMatchDto.player2Id;
+    match.winnerId = createMatchDto.winnerId;
+    match.player = await this.userService.findOne(createMatchDto.player1Id);
+    this.matchRepository.save(match);
+    match.player = await this.userService.findOne(createMatchDto.player2Id);
+    this.matchRepository.save(match);
   }
 
   // async findOne(id: number) {

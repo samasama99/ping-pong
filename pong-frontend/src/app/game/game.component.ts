@@ -74,7 +74,6 @@ export class GameComponent implements AfterViewInit {
               this.game.scene.add('GameScene', this.gameScene);
 
               setTimeout(() => {
-                this.gameScene.scene.start();
                 setInterval(() => {
                   const startTime = Date.now();
                   this.gameService.socket.emit('ping');
@@ -109,6 +108,7 @@ export class GameComponent implements AfterViewInit {
                     console.log("score parsed", score);
                     this.store.dispatch(UpdateScore(score));
                   })
+                this.gameScene.scene.start();
                 this.gameService.playerIsReady()
               }, 100);
             }

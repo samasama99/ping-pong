@@ -1,7 +1,7 @@
 import { Component, inject } from '@angular/core';
 import { LoginService, User } from '../login.service';
 import { GameService } from '../game.service';
-import { Observable, combineLatest, map } from 'rxjs';
+import { Observable, combineLatest, map, switchMap } from 'rxjs';
 
 @Component({
   selector: 'app-login',
@@ -14,26 +14,27 @@ export class LoginComponent {
   public username_create = '';
   public user!: User;
   public gameIsCreated: boolean = false;
-  public users$: Observable<User[]>;
-  public matches$!: Observable<any>;
+  public users$;
   public onlineUsersIds$;
   private gameService!: GameService;
   public filteredUsers$;
 
   constructor(private loginService: LoginService) {
-    this.users$ = this.loginService.getUsers();
     this.loginService.gameIsCreated().subscribe(_ => { this.gameIsCreated = _ });
+    this.users$ = this.loginService.getUsers();
     this.onlineUsersIds$ = this.loginService.getOnlineUsers();
-    this.filteredUsers$ = combineLatest(this.users$, this.onlineUsersIds$).pipe(
-      map(([users, _onlineIds]) => {
-        const onlineIds = JSON.parse(_onlineIds as string);
-        return users.filter(u =>
-          onlineIds.includes(u.id) && (!this.user || u.id !== this.user.id)
-        );
-      }),
+
+    this.filteredUsers$ = this.onlineUsersIds$.pipe(
+      map(onlineIds => JSON.parse(onlineIds as string)),
+      switchMap((onlineIds) =>
+        this.users$.pipe(
+          map((users) =>
+            users.filter(u => onlineIds.includes(u.id))
+          )
+        )
+      )
     );
     this.gameService = new GameService(this.loginService);
-
   }
 
   public logIn() {

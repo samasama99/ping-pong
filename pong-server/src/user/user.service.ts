@@ -18,17 +18,23 @@ export class UserService {
 
   handleDisconnect(socket: any) {
     this.onlineUsers = this.onlineUsers.filter(_ => _.socket !== socket);
+    const onlineUsersPayload = JSON.stringify(this.onlineUsers.map(u => u.id));
     this.onlineUsers
-      .forEach(_ => _.socket.emit('updateOnlineList', JSON.stringify(this.onlineUsers.map(_ => _.id))))
+      .forEach(s => s.socket.emit('updateOnlineList', onlineUsersPayload));
   }
 
-  logIn(socket: Socket<DefaultEventsMap, DefaultEventsMap, DefaultEventsMap, any>, payload: string) {
+  logIn(socket: Socket, payload: string) {
     const id = parseInt(payload);
-    if (this.onlineUsers.find(_ => _.id === id))
+    if (this.onlineUsers.find(_ => _.id === id)) {
+      const onlineUsersPayload = JSON.stringify(this.onlineUsers.map(u => u.id));
+      this.onlineUsers
+        .forEach(s => s.socket.emit('updateOnlineList', onlineUsersPayload));
       return;
+    }
     this.onlineUsers.push({ id, socket });
+    const onlineUsersPayload = JSON.stringify(this.onlineUsers.map(u => u.id));
     this.onlineUsers
-      .forEach(_ => _.socket.emit('updateOnlineList', JSON.stringify(this.onlineUsers.map(_ => _.id))))
+      .forEach(s => s.socket.emit('updateOnlineList', onlineUsersPayload));
   }
 
   async create(createUserDto: CreateUserDto) {

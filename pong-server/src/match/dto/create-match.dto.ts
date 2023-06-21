@@ -9,5 +9,5 @@ export class CreateMatchDto {
   player2Id: number;
 
   @IsNumber()
-  winner: number;
+  winnerId: number;
 }

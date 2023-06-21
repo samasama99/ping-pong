@@ -7,13 +7,16 @@ export class Match {
   id: number;
 
   @ManyToOne(type => User, user => user.matches)
-  player1: User;
+  player: User;
 
-  @ManyToOne(type => User)
-  player2: User;
+  @Column()
+  player1Id: number;
 
-  @Column({ type: 'smallint' })
-  winner: number;
+  @Column()
+  player2Id: number;
+
+  @Column()
+  winnerId: number;
 
   @Column({ type: "datetime", default: () => "CURRENT_TIMESTAMP" })
   date: Date;

@@ -11,9 +11,9 @@ export type User = {
 
 export type Match = {
   id: number;
-  player1: User;
-  player2: User;
-  winner: number;
+  player1Id: User;
+  player2Id: User;
+  winnerId: number;
   date: Date;
 }
 

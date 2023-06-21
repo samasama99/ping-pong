@@ -7,6 +7,7 @@ import * as flatbuffers from 'flatbuffers';
 import { PositionState } from 'src/position-state';
 import { UserService } from 'src/user/user.service';
 import { Inject } from '@nestjs/common';
+import { MatchService } from 'src/match/match.service';
 export enum Color { White = 'White', Blue = 'Blue', Green = 'Green' };
 
 
@@ -36,12 +37,25 @@ export class GameGateway
   private currentPlayers = new Array<{ id: number, socket: Socket }>();
   private activeGameInstances: { [key: string]: GameInstance } = {};
 
-  constructor(private userService: UserService) {
+  constructor(private userService: UserService, private matchService: MatchService) {
     setInterval(() => {
       console.log("queue :", this.queue.map(_ => _.id));
       console.log("active game instances :", Object.keys(this.activeGameInstances));
       console.log("current players :", this.currentPlayers.map(_ => _.id));
       // console.log("before", process.memoryUsage())
+      Object.entries(this.activeGameInstances).forEach(([key, value]) => {
+        if (value.inactive) {
+          const player1Id: number = parseInt(key.split(',')[0]);
+          const player2Id: number = parseInt(key.split(',')[1]);
+          this.currentPlayers = this.currentPlayers.filter(player => player.id !== player1Id && player.id !== player2Id);
+          this.matchService.create(
+            {
+              player1Id,
+              player2Id,
+              winnerId: value.score.player1 > value.score.player2 ? player1Id : player2Id,
+            })
+        }
+      });
       this.activeGameInstances = Object.entries(this.activeGameInstances)
         .filter(([_, gameInstance]) => !gameInstance.inactive)
         .reduce((result, [key, value]) => {
@@ -66,7 +80,6 @@ export class GameGateway
     this.userService.handleDisconnect(socket);
     socket.on('disconnect', () => {
       this.queue = this.queue.filter(player => player.socket !== socket);
-      this.currentPlayers = this.currentPlayers.filter(player => player.socket !== socket);
       socket.removeAllListeners('disconnect');
     });
   }
@@ -123,7 +136,7 @@ class GameInstance {
   private player1Ready: boolean = false;
   private player2Ready: boolean = false;
   private velocity: Matter.Vector;
-  private score: { player1: number, player2: number } = { player1: 0, player2: 0 };
+  public score: { player1: number, player2: number } = { player1: 0, player2: 0 };
   private speed: number = INITALBALLSPEED;
   private checkBallPaddleColisionInterval: NodeJS.Timer;
   public inactive = false;
@@ -171,11 +184,16 @@ class GameInstance {
       const buffer = new flatbuffers.ByteBuffer(new Uint8Array(state));
       const paddleState = PositionState.getRootAsPositionState(buffer);
 
-      const x = paddleState.x();
+      // const x = paddleState.x();
       const y = paddleState.y();
-      Body.setPosition(this.paddle1, { x, y });
+      Body.setPosition(this.paddle1, { x: this.paddle1.position.x, y });
 
-      player2.emit('updateOpponentPaddle', state);
+      const builder = new flatbuffers.Builder();
+      const offset = PositionState.createPositionState(builder, this.paddle1.position.x, this.paddle1.position.y);
+      builder.finish(offset);
+
+
+      player2.emit('updateOpponentPaddle', builder.asUint8Array());
     });
 
     player2.on('sendMyPaddleState', (state) => {

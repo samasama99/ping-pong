@@ -5,24 +5,42 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Match } from './entities/match.entity';
 import { User } from 'src/user/entities/user.entity';
+import { UserService } from 'src/user/user.service';
 
 @Injectable()
 export class MatchService {
   constructor(
     @InjectRepository(Match) private matchRepository: Repository<Match>,
-    @InjectRepository(User) private userRepository: Repository<User>
+    private userService: UserService
   ) { };
 
   async create(createMatchDto: CreateMatchDto) {
-    const match = this.matchRepository.create({ ...createMatchDto });
-    return this.matchRepository.save(match);
+    console.log("dto", createMatchDto);
+    {
+      const match = new Match();
+      match.player = await this.userService.findOne(createMatchDto.player1Id);
+      match.player1Id = createMatchDto.player1Id;
+      match.player2Id = createMatchDto.player2Id;
+      match.winnerId = createMatchDto.winnerId;
+      console.log("match", match)
+      this.matchRepository.save(match);
+    }
+    {
+      const match = new Match();
+      match.player = await this.userService.findOne(createMatchDto.player2Id);
+      match.player1Id = createMatchDto.player1Id;
+      match.player2Id = createMatchDto.player2Id;
+      match.winnerId = createMatchDto.winnerId;
+      console.log("match", match)
+      this.matchRepository.save(match);
+    }
   }
 
-  async findOne(id: number) {
-    return this.matchRepository
-      .findOneOrFail({
-        where: { id: id },
-        relations: ['player1', 'player2'],
-      });
-  }
+  // async findOne(id: number) {
+  //   return this.matchRepository
+  //     .findOneOrFail({
+  //       where: { id: id },
+  //       relations: ['player1', 'player2'],
+  //     });
+  // }
 }

@@ -6,6 +6,7 @@ import { User } from './entities/user.entity';
 import { Repository } from 'typeorm';
 import { Socket } from 'socket.io';
 import { DefaultEventsMap } from 'socket.io/dist/typed-events';
+import { Matches } from 'class-validator';
 
 @Injectable()
 export class UserService {
@@ -36,19 +37,25 @@ export class UserService {
   }
 
   async findAll() {
-    return this.userRepository.find();
+    return this.userRepository.find({
+      relations: ['matches']
+    });
   }
 
   async findOne(id: number) {
-    return this.userRepository.findOneOrFail({
-      where: { id: id },
+    return this.userRepository.findOne({
+      where: { id },
       relations: ['matches'],
     });
   }
 
   async findOneByUsername(username: string): Promise<User> {
-    return this.userRepository.findOne({ where: { username } });
+    return this.userRepository.findOne({
+      where: { username },
+      relations: ['matches'],
+    });
   }
+
   // update(id: number, updateUserDto: UpdateUserDto) {
   //   return `This action updates a #${id} user`;
   // }

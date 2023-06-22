@@ -8,7 +8,7 @@ import { sampleSize } from 'lodash';
 
 export const GAMEWIDTH = 1232;
 export const GAMEHEIGHT = 685;
-export const BALLRADIUS = 20 / 2;
+export const BALLRADIUS = 10;
 export const PADDLEWIDTH = 12;
 export const PADDLEHEIGHT = 119;
 export const PADDLE1POSITION = { x: 27, y: GAMEHEIGHT / 2 };
@@ -28,9 +28,9 @@ export class GameService {
 
   constructor(private userService: UserService, private matchService: MatchService) {
     setInterval(() => {
-      console.log("queue :", this.queue.map(_ => _.id));
-      console.log("active game instances :", Object.keys(this.activeGameInstances));
-      console.log("current players :", this.currentPlayers.map(_ => _.id));
+      // console.log("queue :", this.queue.map(_ => _.id));
+      // console.log("active game instances :", Object.keys(this.activeGameInstances));
+      // console.log("current players :", this.currentPlayers.map(_ => _.id));
       Object.entries(this.activeGameInstances).forEach(([key, value]) => {
         if (value.inactive) {
           const player1Id: number = parseInt(key.split(',')[0]);

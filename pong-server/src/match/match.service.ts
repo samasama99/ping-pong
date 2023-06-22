@@ -15,17 +15,38 @@ export class MatchService {
   ) { };
 
   async create(createMatchDto: CreateMatchDto) {
-    console.log("dto", createMatchDto);
     const match = new Match();
-    match.player1Id = createMatchDto.player1Id;
-    match.player2Id = createMatchDto.player2Id;
-    match.winnerId = createMatchDto.winnerId;
-    match.player = await this.userService.findOne(createMatchDto.player1Id);
-    this.matchRepository.save(match);
-    match.player = await this.userService.findOne(createMatchDto.player2Id);
+    match.player1 = await this.userService.findOne(createMatchDto.player1Id);
+    match.player2 = await this.userService.findOne(createMatchDto.player2Id);
+    match.winner = await this.userService.findOne(createMatchDto.winnerId);
     this.matchRepository.save(match);
   }
 
+  async getMatchHistory(userId: number) {
+    const matches = await this.matchRepository
+      .createQueryBuilder('match')
+      .leftJoinAndSelect('match.player1', 'player1')
+      .leftJoinAndSelect('match.player2', 'player2')
+      .leftJoinAndSelect('match.winner', 'winner')
+      .where('player1.id = :userId OR player2.id = :userId', { userId })
+      .getMany();
+    return matches.map(match => ({
+      id: match.id,
+      player1: {
+        id: match.player1.id,
+        username: match.player1.username
+      },
+      player2: {
+        id: match.player2.id,
+        username: match.player2.username
+      },
+      winner: match.winner ? {
+        id: match.winner.id,
+        username: match.winner.username
+      } : null,
+      date: match.date
+    }));
+  }
   // async findOne(id: number) {
   //   return this.matchRepository
   //     .findOneOrFail({

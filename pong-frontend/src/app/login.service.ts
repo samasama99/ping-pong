@@ -2,18 +2,18 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Socket } from 'ngx-socket-io';
 import { BehaviorSubject } from 'rxjs';
+import { GameService } from './game.service';
 
 export type User = {
   id: number;
   username: string;
-  matches: Match[];
 }
 
 export type Match = {
   id: number;
-  player1Id: User;
-  player2Id: User;
-  winnerId: number;
+  player1: { id: number, username: string };
+  player2: { id: number, username: string };
+  winner: { id: number, username: string };
   date: Date;
 }
 
@@ -21,11 +21,17 @@ export type Match = {
   providedIn: 'root'
 })
 export class LoginService {
-  public socket = new Socket({ url: '10.12.5.5:3001' });
-  private url_base = 'http://10.12.5.5:3000/user';
+  public ip;
+  public url_base_user;
+  public url_base_match;
+  public socket: Socket;
   private gameIsCreated$ = new BehaviorSubject<boolean>(false);
 
-  constructor(private httpClient: HttpClient) {
+  constructor(private httpClient: HttpClient, private gameService: GameService) {
+    this.socket = gameService.socket;
+    this.ip = this.gameService.ip;
+    this.url_base_user = this.gameService.url_base_user;
+    this.url_base_match = this.gameService.url_base_match;
     this.socket.on('invite', (inviterId: string) => {
       const id = parseInt(inviterId);
       const response = confirm(`You have been invited by player id ${id}. Do you accept?`);
@@ -38,15 +44,22 @@ export class LoginService {
   };
 
   public logIn(username: string) {
-    return this.httpClient.get<User>(`${this.url_base}/${username}`);
+    return this.httpClient.get<User>(`${this.url_base_user}/${username}`);
+  }
+
+  public getMatchHistory(id: number) {
+    this.httpClient.get<Match[]>(`${this.url_base_match}/${id}`).subscribe(json => {
+      console.log(json)
+    })
+    return this.httpClient.get<Match[]>(`${this.url_base_match}/${id}`);
   }
 
   public createUser(username: string) {
-    return this.httpClient.post<User>(this.url_base, { username });
+    return this.httpClient.post<User>(this.url_base_user, { username });
   }
 
   public getUsers() {
-    return this.httpClient.get<User[]>(this.url_base);
+    return this.httpClient.get<User[]>(this.url_base_user);
   }
 
   public gameIsCreated() {

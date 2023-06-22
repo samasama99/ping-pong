@@ -1,7 +1,7 @@
-import { Component, inject } from '@angular/core';
-import { LoginService, User } from '../login.service';
+import { Component } from '@angular/core';
+import { LoginService, Match, User } from '../login.service';
 import { GameService } from '../game.service';
-import { Observable, combineLatest, map, switchMap } from 'rxjs';
+import { Observable, map, switchMap } from 'rxjs';
 
 @Component({
   selector: 'app-login',
@@ -16,10 +16,10 @@ export class LoginComponent {
   public gameIsCreated: boolean = false;
   public users$;
   public onlineUsersIds$;
-  private gameService!: GameService;
   public filteredUsers$;
+  public matchesHistory$: Observable<Match[]> | undefined = undefined;
 
-  constructor(private loginService: LoginService) {
+  constructor(private loginService: LoginService, private gameService: GameService) {
     this.loginService.gameIsCreated().subscribe(_ => { this.gameIsCreated = _ });
     this.users$ = this.loginService.getUsers();
     this.onlineUsersIds$ = this.loginService.getOnlineUsers();
@@ -34,17 +34,15 @@ export class LoginComponent {
         )
       )
     );
-    this.gameService = new GameService(this.loginService);
   }
 
   public logIn() {
     if (!this.username_login)
       return;
-    this.loginService.logIn(this.username_login).subscribe(u => {
-      if (!u) return;
-      console.log(u);
-      this.user = u;
-      this.loginService.addToOnline(u.id);
+    this.loginService.logIn(this.username_login).subscribe(user => {
+      this.matchesHistory$ = this.loginService.getMatchHistory(user.id);
+      this.user = user;
+      this.loginService.addToOnline(user.id);
     });
   }
 

@@ -2,12 +2,20 @@ import { Component, OnInit } from '@angular/core';
 import { GameScene } from './game.scene';
 import Phaser from 'phaser';
 import 'phaser3-nineslice';
-import { Store } from '@ngrx/store';
-import { Color, GameState, GameStateType, Player, } from './game-state/game.state';
 import { GameService } from '../game.service';
-import { PositionState } from 'src/position-state';
-import * as flatbuffers from 'flatbuffers';
-import { CreateGame, SetColor, SetPlayerNumber, UpdateBall, UpdateGameState, UpdateOpponentPosition, UpdateScore } from './game-state/game.reducer';
+
+export enum GameStateType {
+  Created = "Created",
+  Queue = "Queue",
+  Playing = "Playing",
+  Finished = "Finished"
+};
+
+export enum Player { NotSetYet = 0, One = 1, Two = 2 };
+export type Position = { x: number, y: number };
+export enum Color { White = 'White', Blue = 'Blue', Green = 'Green' };
+export type Score = { player1: number, player2: number };
+
 
 const RESOLUTION = { width: 1232, height: 685 };
 const TARGET_FPS = 60;
@@ -22,7 +30,7 @@ export class GameComponent implements OnInit {
   private config: Phaser.Types.Core.GameConfig;
   private gameScene!: GameScene;
 
-  constructor(private store: Store<GameState>, private gameService: GameService) {
+  constructor(private gameService: GameService) {
     this.config = {
       type: Phaser.AUTO,
       width: RESOLUTION.width,
@@ -50,64 +58,32 @@ export class GameComponent implements OnInit {
   }
 
   ngOnInit() {
-    this.store.dispatch(CreateGame());
     this.game = new Phaser.Game(this.config);
     this.gameService.getState()
       .subscribe(payload => {
         console.log({ payload });
         const state: { gameState: GameStateType, playerNumber: Player, isWin: boolean, color: Color } = JSON.parse(payload);
-        if (state.gameState) {
-          this.store.dispatch(UpdateGameState(state.gameState));
-        }
-        if (state.playerNumber) {
-          this.store.dispatch(SetPlayerNumber(state.playerNumber));
-        }
-        if (state.color) {
-          this.store.dispatch(SetColor(state.color));
-        }
         switch (state.gameState) {
           case GameStateType.Playing: {
             if (!this.gameScene) {
-              this.gameScene = new GameScene(this.store, state.playerNumber, state.color ?? Color.White);
-
-              setInterval(() => {
-                const startTime = Date.now();
-                this.gameService.socket.emit('ping');
-                this.gameService.socket.once('pong', () => {
-                  const latency = Date.now() - startTime;
-                  this.gameScene.pingText.setText(`Ping: ${latency}ms`);
-                });
-              }, 2000);
-              this.gameService.updateBallStateEvent()
-                .subscribe((state) => {
-                  const buffer = new flatbuffers.ByteBuffer(new Uint8Array(state));
-                  const ballState = PositionState.getRootAsPositionState(buffer);
-
-                  const x = ballState.x();
-                  const y = ballState.y();
-                  this.store.dispatch(UpdateBall({ x, y }));
-                });
-              this.gameService.updateOpponentPaddle()
-                .subscribe((state) => {
-                  const buffer = new flatbuffers.ByteBuffer(new Uint8Array(state));
-                  const paddleState = PositionState.getRootAsPositionState(buffer);
-
-                  const x = paddleState.x();
-                  const y = paddleState.y();
-                  this.store.dispatch(UpdateOpponentPosition({ x, y }));
-                });
-              this.gameService.updatePlayerScoreEvent()
-                .subscribe((payload) => {
-                  const score: {
-                    player1: number, player2: number
-                  } = JSON.parse(payload);
-                  console.log("score parsed", score);
-                  this.store.dispatch(UpdateScore(score));
-                })
-
+              this.gameScene = new GameScene(this.gameService, state.playerNumber, state.color ?? Color.White);
               this.game.scene.add('GameScene', this.gameScene);
-              this.gameScene.scene.start();
-              this.gameService.playerIsReady()
+
+              // setInterval(() => {
+              //   const startTime = Date.now();
+              //   this.gameService.socket.emit('ping');
+              //   this.gameService.socket.once('pong', () => {
+              //     const latency = Date.now() - startTime;
+              //     this.gameScene.pingText.setText(`Ping: ${latency}ms`);
+              //   });
+              // }, 2000);
+
+              setTimeout(() => {
+                this.gameScene.scene.start();
+              }, 50);
+              setTimeout(() => {
+                this.gameService.playerIsReady()
+              }, 500);
             }
             break;
           }

@@ -19,12 +19,12 @@
     </ul>
 
     <h2>Match History :</h2>
-    <ul *ngFor="let match of user.matches">
+    <ul *ngFor="let match of matchesHistory$ | async">
       <li>
         <!-- <div>Match ID: {{ match.id }}</div> -->
-        <div>Payer1: {{ match.player1Id }}</div>
-        <div>Payer2: {{ match.player2Id }}</div>
-        <div>Winner: {{ match.winnerId }}</div>
+        <div>Payer1: {{ match.player1.id }}</div>
+        <div>Payer2: {{ match.player2.id }}</div>
+        <div>Winner: {{ match.winner.id }}</div>
         <div>Date: {{ match.date | date:'fullDate' }}</div>
       </li>
     </ul>

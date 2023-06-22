@@ -44,21 +44,21 @@ export class UserService {
 
   async findAll() {
     return this.userRepository.find({
-      relations: ['matches']
+      // relations: ['matches']
     });
   }
 
   async findOne(id: number) {
     return this.userRepository.findOne({
       where: { id },
-      relations: ['matches'],
+      // relations: ['matches'],
     });
   }
 
   async findOneByUsername(username: string): Promise<User> {
     return this.userRepository.findOne({
       where: { username },
-      relations: ['matches'],
+      // relations: ['matches'],
     });
   }
 

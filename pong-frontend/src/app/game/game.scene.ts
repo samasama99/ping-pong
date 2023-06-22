@@ -1,9 +1,9 @@
 import Phaser from 'phaser';
 import 'phaser3-nineslice';
-import { Store } from '@ngrx/store';
-import { Color, GameState, Player, } from './game-state/game.state';
-import { selectBallState, selectOpponentPaddleState, selectScoreState } from './game-state/game.selectors';
-import { SendMyPaddlePosition, StartGame, UpdateOpponentPosition } from './game-state/game.reducer';
+import { GameService } from '../game.service';
+import { PositionState } from 'src/position-state';
+import * as flatbuffers from 'flatbuffers';
+import { Color, Player } from './game.component';
 
 
 export class GameScene extends Phaser.Scene {
@@ -28,13 +28,12 @@ export class GameScene extends Phaser.Scene {
   public winText!: Phaser.GameObjects.Text;
   public pingText!: Phaser.GameObjects.Text;
 
-  constructor(private store: Store<GameState>, private playerNumber: Player, private color: Color) {
+  constructor(private gameService: GameService, private playerNumber: Player, private color: Color) {
     super({ key: 'GameScene' });
     console.log("create GameScene");
   }
 
   init() {
-    this.store.dispatch(StartGame());
   }
 
   preload() {
@@ -74,11 +73,6 @@ export class GameScene extends Phaser.Scene {
         console.log("default")
     }
 
-    if (this.myPaddle?.body && this.opponentPaddle?.body) {
-      this.store.dispatch(SendMyPaddlePosition({ x: this.myPaddle.x, y: this.myPaddle.y }));
-      this.store.dispatch(UpdateOpponentPosition({ x: this.opponentPaddle.x, y: this.opponentPaddle.y }))
-    }
-
     this.ball = this.add.image(this.gameWidth / 2, this.gameHeight / 2, 'ball');
     this.win = this.add.image(this.gameWidth / 2, this.gameHeight / 2, 'win').setVisible(false);
   }
@@ -93,43 +87,59 @@ export class GameScene extends Phaser.Scene {
       this.scoreText2 = this.add.text(this.gameWidth - 555, 20, '0', { fontSize: '40px', fill: '#fff', fontFamily: 'Montserrat' } as Phaser.Types.GameObjects.Text.TextStyle).setOrigin(1, 0);
     }
 
-    const textColor = this.color == Color.White ? "#184E77" : "#fff";
-    const fpsText = this.add.text(30, 30, 'Fps: -', { fontSize: '16px', fill: textColor, fontFamily: 'Montserrat' } as Phaser.Types.GameObjects.Text.TextStyle);
-    fpsText.setDepth(1);
-    setInterval(() => {
-      fpsText.setText(`Fps: ${Math.round(this.game.loop.actualFps)}`);
-    }, 1000);
-    this.pingText = this.add.text(90, 30, 'Ping: -', { fontSize: '16px', fill: textColor, fontFamily: 'Montserrat' } as Phaser.Types.GameObjects.Text.TextStyle);
-    this.pingText.setDepth(1);
+    // const textColor = this.color == Color.White ? "#184E77" : "#fff";
+    // const fpsText = this.add.text(30, 30, 'Fps: -', { fontSize: '16px', fill: textColor, fontFamily: 'Montserrat' } as Phaser.Types.GameObjects.Text.TextStyle);
+    // fpsText.setDepth(1);
+    // setInterval(() => {
+    //   fpsText.setText(`Fps: ${Math.round(this.game.loop.actualFps)}`);
+    // }, 1000);
+    // this.pingText = this.add.text(90, 30, 'Ping: -', { fontSize: '16px', fill: textColor, fontFamily: 'Montserrat' } as Phaser.Types.GameObjects.Text.TextStyle);
+    // this.pingText.setDepth(1);
   }
 
   create() {
+    console.log("create GameScene start")
     this.gameHeight = this.sys.canvas.height;
     this.gameWidth = this.sys.canvas.width;
     this.cursors = this.input?.keyboard?.createCursorKeys()!;
     this.background = this.add.image(0, 0, 'background').setOrigin(0, 0);
-    this.background.displayWidth = this.gameWidth; // Set the width to 100 pixels
-    this.background.displayHeight = this.gameHeight; //
+    this.background.displayWidth = this.gameWidth;
+    this.background.displayHeight = this.gameHeight;
     this.add.image(this.gameWidth / 2, this.gameHeight / 2, 'line')
-    this.cameras.main.setBackgroundColor('#103960');
+    // this.cameras.main.setBackgroundColor('#103960');
     this.setupGameObject();
     this.initText();
 
-    this.store.select(selectOpponentPaddleState)
-      .subscribe((position) => {
-        this.latestOpponentPosition = { x: position.x, y: position.y };
-      });
+    this.gameService.updateBallStateEvent()
+      .subscribe((state) => {
+        const buffer = new flatbuffers.ByteBuffer(new Uint8Array(state));
+        const ballState = PositionState.getRootAsPositionState(buffer);
 
-    this.store.select(selectBallState)
-      .subscribe(position => {
-        this.latestBallPosition = { x: position.x, y: position.y };
+        const x = ballState.x();
+        const y = ballState.y();
+        this.latestBallPosition = { x, y };
       });
+    this.gameService.updateOpponentPaddle()
+      .subscribe((state) => {
+        const buffer = new flatbuffers.ByteBuffer(new Uint8Array(state));
+        const paddleState = PositionState.getRootAsPositionState(buffer);
 
-    this.store.select(selectScoreState)
-      .subscribe(score => {
+        const x = paddleState.x();
+        const y = paddleState.y();
+        this.latestOpponentPosition = { x, y };
+      });
+    this.gameService.updatePlayerScoreEvent()
+      .subscribe((payload) => {
+        const score: {
+          player1: number, player2: number
+        } = JSON.parse(payload);
+        console.log("score parsed", score);
         this.scoreText1.setText(`${score.player1}`)
         this.scoreText2.setText(`${score.player2}`)
-      });
+      })
+
+
+    console.log("create GameScene end")
   }
 
   override update() {
@@ -155,7 +165,7 @@ export class GameScene extends Phaser.Scene {
         this.gameHeight - this.myPaddle.height / 2 - 15
       ))
 
-      this.store.dispatch(SendMyPaddlePosition({ x: this.myPaddle.x, y: this.myPaddle.y }));
+      this.gameService.sendMyPaddlePosition({ x: this.myPaddle.x, y: this.myPaddle.y });
     }
   }
 

@@ -12,8 +12,8 @@ export class MatchController {
   //   return this.matchService.create(createMatchDto);
   // }
 
-  // @Get(':id')
-  // findOne(@Param('id') id: string) {
-  //   return this.matchService.findOne(+id);
-  // }
+  @Get(':id')
+  findOne(@Param('id') id: string) {
+    return this.matchService.getMatchHistory(+id);
+  }
 }

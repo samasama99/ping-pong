@@ -2,23 +2,23 @@ import { Injectable } from '@angular/core';
 import { Socket } from 'ngx-socket-io';
 import * as flatbuffers from 'flatbuffers';
 import { PositionState } from 'src/position-state';
-import { LoginService } from './login.service';
 
 @Injectable({
   providedIn: 'root'
 })
 export class GameService {
-  public socket: Socket;
-  constructor(private loginService: LoginService) {
-    this.socket = loginService.socket;
-  }
+  // private ip = '10.12.7.13';
+  public ip = 'localhost';
+  public url_base_user = `http://${this.ip}:3000/user`;
+  public url_base_match = `http://${this.ip}:3000/match`;
+  public socket = new Socket({ url: `${this.ip}:3001` });
 
   createGame(id1: number, id2?: number) {
-    this.loginService.socket.emit('createGame', JSON.stringify({ id1, id2 }));
+    this.socket.emit('createGame', JSON.stringify({ id1, id2 }));
   }
 
   getState() {
-    return this.loginService.socket.fromEvent<string>('changeState')
+    return this.socket.fromEvent<string>('changeState')
   }
 
   sendMyPaddlePosition(position: { x: number, y: number }) {
@@ -27,23 +27,23 @@ export class GameService {
     builder.finish(offset);
     const buffer = builder.asUint8Array();
 
-    this.loginService.socket.emit('sendMyPaddleState', buffer);
+    this.socket.emit('sendMyPaddleState', buffer);
   }
 
   updateOpponentPaddle() {
-    return this.loginService.socket.fromEvent<ArrayBuffer>('updateOpponentPaddle');
+    return this.socket.fromEvent<ArrayBuffer>('updateOpponentPaddle');
   }
 
   updateBallStateEvent() {
-    return this.loginService.socket.fromEvent<ArrayBuffer>('updateBallState');
+    return this.socket.fromEvent<ArrayBuffer>('updateBallState');
   }
 
   updatePlayerScoreEvent() {
-    return this.loginService.socket.fromEvent<string>('UpdateScore');
+    return this.socket.fromEvent<string>('UpdateScore');
   }
 
   playerIsReady() {
-    this.loginService.socket.emit('playerIsReady');
+    this.socket.emit('playerIsReady');
   }
 
 }

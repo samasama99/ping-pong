@@ -1,3 +1,4 @@
+
 import { User } from "src/user/entities/user.entity";
 import { Column, Entity, ManyToOne, PrimaryGeneratedColumn } from "typeorm";
 
@@ -6,18 +7,16 @@ export class Match {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @ManyToOne(type => User, user => user.matches)
-  player: User;
+  @ManyToOne(() => User, user => user.matchesAsPlayer1)
+  player1: User;
 
-  @Column()
-  player1Id: number;
+  @ManyToOne(() => User, user => user.matchesAsPlayer2)
+  player2: User;
 
-  @Column()
-  player2Id: number;
-
-  @Column()
-  winnerId: number;
+  @ManyToOne(() => User, user => user.wonMatches)
+  winner: User;
 
   @Column({ type: "datetime", default: () => "CURRENT_TIMESTAMP" })
   date: Date;
 }
+

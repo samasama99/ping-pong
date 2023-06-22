@@ -9,6 +9,13 @@ export class User {
   @Column({ unique: true })
   username: string;
 
-  @OneToMany(type => Match, match => match.player)
-  matches: Match[];
+  @OneToMany(() => Match, match => match.player1)
+  matchesAsPlayer1: Match[];
+
+  @OneToMany(() => Match, match => match.player2)
+  matchesAsPlayer2: Match[];
+
+  @OneToMany(() => Match, match => match.winner)
+  wonMatches: Match[];
 }
+

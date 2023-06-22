@@ -4,6 +4,7 @@ import { GameService } from '../game.service';
 import { PositionState } from 'src/position-state';
 import * as flatbuffers from 'flatbuffers';
 import { Color, Player } from './game.component';
+import { Subscription } from 'rxjs';
 
 
 export class GameScene extends Phaser.Scene {
@@ -28,12 +29,14 @@ export class GameScene extends Phaser.Scene {
   public winText!: Phaser.GameObjects.Text;
   public pingText!: Phaser.GameObjects.Text;
 
+
+  private updateBallStateEventSub!: Subscription;
+  private updateOpponentPaddleSub!: Subscription;
+  private updatePlayerScoreEventSub!: Subscription;
+
   constructor(private gameService: GameService, private playerNumber: Player, private color: Color) {
     super({ key: 'GameScene' });
     console.log("create GameScene");
-  }
-
-  init() {
   }
 
   preload() {
@@ -86,15 +89,6 @@ export class GameScene extends Phaser.Scene {
       this.scoreText1 = this.add.text(555, 20, '0', { fontSize: '40px', fill: '#fff', fontFamily: 'Montserrat' } as Phaser.Types.GameObjects.Text.TextStyle);
       this.scoreText2 = this.add.text(this.gameWidth - 555, 20, '0', { fontSize: '40px', fill: '#fff', fontFamily: 'Montserrat' } as Phaser.Types.GameObjects.Text.TextStyle).setOrigin(1, 0);
     }
-
-    // const textColor = this.color == Color.White ? "#184E77" : "#fff";
-    // const fpsText = this.add.text(30, 30, 'Fps: -', { fontSize: '16px', fill: textColor, fontFamily: 'Montserrat' } as Phaser.Types.GameObjects.Text.TextStyle);
-    // fpsText.setDepth(1);
-    // setInterval(() => {
-    //   fpsText.setText(`Fps: ${Math.round(this.game.loop.actualFps)}`);
-    // }, 1000);
-    // this.pingText = this.add.text(90, 30, 'Ping: -', { fontSize: '16px', fill: textColor, fontFamily: 'Montserrat' } as Phaser.Types.GameObjects.Text.TextStyle);
-    // this.pingText.setDepth(1);
   }
 
   create() {
@@ -110,7 +104,7 @@ export class GameScene extends Phaser.Scene {
     this.setupGameObject();
     this.initText();
 
-    this.gameService.updateBallStateEvent()
+    this.updateBallStateEventSub = this.gameService.updateBallStateEvent()
       .subscribe((state) => {
         const buffer = new flatbuffers.ByteBuffer(new Uint8Array(state));
         const ballState = PositionState.getRootAsPositionState(buffer);
@@ -119,7 +113,7 @@ export class GameScene extends Phaser.Scene {
         const y = ballState.y();
         this.latestBallPosition = { x, y };
       });
-    this.gameService.updateOpponentPaddle()
+    this.updateOpponentPaddleSub = this.gameService.updateOpponentPaddle()
       .subscribe((state) => {
         const buffer = new flatbuffers.ByteBuffer(new Uint8Array(state));
         const paddleState = PositionState.getRootAsPositionState(buffer);
@@ -128,7 +122,8 @@ export class GameScene extends Phaser.Scene {
         const y = paddleState.y();
         this.latestOpponentPosition = { x, y };
       });
-    this.gameService.updatePlayerScoreEvent()
+
+    this.updatePlayerScoreEventSub = this.gameService.updatePlayerScoreEvent()
       .subscribe((payload) => {
         const score: {
           player1: number, player2: number
@@ -142,12 +137,20 @@ export class GameScene extends Phaser.Scene {
     console.log("create GameScene end")
   }
 
+  destroy() {
+    console.log("scene destroyed");
+    this.updateBallStateEventSub?.unsubscribe();
+    this.updateOpponentPaddleSub?.unsubscribe();
+    this.updatePlayerScoreEventSub?.unsubscribe();
+  }
+
+  private previousY = 0;
   override update() {
     this.opponentPaddle.setPosition(this.latestOpponentPosition.x, this.latestOpponentPosition.y);
     this.ball.setPosition(this.latestBallPosition.x, this.latestBallPosition.y);
 
+    console.log(this.myPaddle.y, this.previousY);
     if (this.myPaddle.body?.velocity) {
-
       const newPaddleVelocity = new Phaser.Math.Vector2(0, 0);
 
       if (this.cursors.up.isDown) {
@@ -158,6 +161,7 @@ export class GameScene extends Phaser.Scene {
         this.myPaddle.setVelocityY(0);
       }
 
+
       this.myPaddle.body.velocity.lerp(newPaddleVelocity, this.interpolationFactor);
 
       this.myPaddle.setY(Phaser.Math.Clamp(this.myPaddle.y,
@@ -165,7 +169,10 @@ export class GameScene extends Phaser.Scene {
         this.gameHeight - this.myPaddle.height / 2 - 15
       ))
 
-      this.gameService.sendMyPaddlePosition({ x: this.myPaddle.x, y: this.myPaddle.y });
+      if (this.myPaddle.y != this.previousY) {
+        this.gameService.sendMyPaddlePosition({ x: this.myPaddle.x, y: this.myPaddle.y });
+      }
+      this.previousY = this.myPaddle.y;
     }
   }
 

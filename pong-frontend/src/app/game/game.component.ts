@@ -1,8 +1,9 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { GameScene } from './game.scene';
 import Phaser from 'phaser';
 import 'phaser3-nineslice';
 import { GameService } from '../game.service';
+import { Subscription } from 'rxjs';
 
 export enum GameStateType {
   Created = "Created",
@@ -25,10 +26,11 @@ const TARGET_FPS = 60;
   templateUrl: './game.component.html',
   styleUrls: ['./game.component.css']
 })
-export class GameComponent implements OnInit {
+export class GameComponent implements OnInit, OnDestroy {
   private game!: Phaser.Game;
   private config: Phaser.Types.Core.GameConfig;
   private gameScene!: GameScene;
+  private gameStateSub!: Subscription;
 
   constructor(private gameService: GameService) {
     this.config = {
@@ -57,9 +59,16 @@ export class GameComponent implements OnInit {
     };
   }
 
+  ngOnDestroy(): void {
+    if (this.gameScene) {
+      this.gameScene.destroy();
+    }
+    this.gameStateSub.unsubscribe();
+  }
+
   ngOnInit() {
     this.game = new Phaser.Game(this.config);
-    this.gameService.getState()
+    this.gameStateSub = this.gameService.getState()
       .subscribe(payload => {
         console.log({ payload });
         const state: { gameState: GameStateType, playerNumber: Player, isWin: boolean, color: Color } = JSON.parse(payload);
@@ -68,15 +77,6 @@ export class GameComponent implements OnInit {
             if (!this.gameScene) {
               this.gameScene = new GameScene(this.gameService, state.playerNumber, state.color ?? Color.White);
               this.game.scene.add('GameScene', this.gameScene);
-
-              // setInterval(() => {
-              //   const startTime = Date.now();
-              //   this.gameService.socket.emit('ping');
-              //   this.gameService.socket.once('pong', () => {
-              //     const latency = Date.now() - startTime;
-              //     this.gameScene.pingText.setText(`Ping: ${latency}ms`);
-              //   });
-              // }, 2000);
 
               setTimeout(() => {
                 this.gameScene.scene.start();
@@ -93,7 +93,6 @@ export class GameComponent implements OnInit {
               this.gameScene.win.setVisible(true);
               this.gameScene.winText.setText(state.isWin ? "WON" : "LOST");
               this.gameScene.physics.pause();
-              // this.gameScene?.scene.stop();
             } else {
               console.log("ABORT")
             }

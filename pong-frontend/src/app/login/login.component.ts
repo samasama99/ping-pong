@@ -24,6 +24,12 @@ export class LoginComponent {
     this.users$ = this.loginService.getUsers();
     this.onlineUsersIds$ = this.loginService.getOnlineUsers();
 
+    // this.loginService.logIn("ali").subscribe(user => {
+    //   this.matchesHistory$ = this.loginService.getMatchHistory(user.id);
+    //   this.user = user;
+    //   this.loginService.addToOnline(user.id);
+    // });
+
     this.filteredUsers$ = this.onlineUsersIds$.pipe(
       map(onlineIds => JSON.parse(onlineIds as string)),
       switchMap((onlineIds) =>

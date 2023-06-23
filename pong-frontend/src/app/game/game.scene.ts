@@ -128,7 +128,7 @@ export class GameScene extends Phaser.Scene {
         const score: {
           player1: number, player2: number
         } = JSON.parse(payload);
-        console.log("score parsed", score);
+        // console.log("score parsed", score);
         this.scoreText1.setText(`${score.player1}`)
         this.scoreText2.setText(`${score.player2}`)
       })
@@ -149,7 +149,7 @@ export class GameScene extends Phaser.Scene {
     this.opponentPaddle.setPosition(this.latestOpponentPosition.x, this.latestOpponentPosition.y);
     this.ball.setPosition(this.latestBallPosition.x, this.latestBallPosition.y);
 
-    console.log(this.myPaddle.y, this.previousY);
+    // console.log(this.myPaddle.y, this.previousY);
     if (this.myPaddle.body?.velocity) {
       const newPaddleVelocity = new Phaser.Math.Vector2(0, 0);
 

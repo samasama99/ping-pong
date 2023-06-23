@@ -7,7 +7,7 @@ import { PositionState } from 'src/position-state';
   providedIn: 'root'
 })
 export class GameService {
-  // private ip = '10.12.7.13';
+  // public ip = '10.12.8.7';
   public ip = 'localhost';
   public url_base_user = `http://${this.ip}:3000/user`;
   public url_base_match = `http://${this.ip}:3000/match`;

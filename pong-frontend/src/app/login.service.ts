@@ -48,9 +48,6 @@ export class LoginService {
   }
 
   public getMatchHistory(id: number) {
-    this.httpClient.get<Match[]>(`${this.url_base_match}/${id}`).subscribe(json => {
-      console.log(json)
-    })
     return this.httpClient.get<Match[]>(`${this.url_base_match}/${id}`);
   }
 

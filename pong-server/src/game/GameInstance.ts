@@ -224,28 +224,19 @@ export class GameInstance {
       delta: 1000 / 60 // Change the time step value here
     });
     // this.engine.constraintIterations = 20;
-    // this.engine.velocityIterations = 20;
-    // this.engine.positionIterations = 20;
+    this.engine.velocityIterations = 10;
+    this.engine.positionIterations = 10;
 
     this.runner = Runner.run(runner, this.engine);
 
-    // Events.on(this.engine, 'collisionStart', (event) => {
-    //   const pairs = event.pairs;
-
-    //   for (let i = 0; i < pairs.length; i++) {
-    //     const pair = pairs[i];
-    //     const bodyA = pair.bodyA;
-    //     const bodyB = pair.bodyB;
-
-    //     if ((bodyA === this.ball && bodyB === this.paddle1) || (bodyB === this.ball && bodyA === this.paddle1)) {
-    //       console.log("ball paddle1 collision", Date.now())
-    //       // console.log(pair.contacts)
-    //       this.checkBallPaddle1Collision();
-    //     } else if ((bodyA === this.ball && bodyB === this.paddle2) || (bodyB === this.ball && bodyA === this.paddle2)) {
-    //       this.checkBallPaddle2Collision();
-    //     }
-    //   }
-    // });
+    Events.on(this.engine, 'collisionEnd', () => {
+      if (Vector.magnitude(this.velocity) > 15) {
+        this.velocity.x /= Vector.magnitude(this.velocity);
+        this.velocity.y /= Vector.magnitude(this.velocity);
+        this.velocity.x *= 15;
+        this.velocity.y *= 15;
+      }
+    });
 
 
     Events.on(this.engine, 'collisionActive', (event) => {
@@ -258,7 +249,6 @@ export class GameInstance {
 
         if ((bodyA === this.ball && bodyB === this.paddle1) || (bodyB === this.ball && bodyA === this.paddle1)) {
           console.log("ball paddle1 collision", Date.now())
-          // console.log(pair.contacts)
           this.checkBallPaddle1Collision();
         } else if ((bodyA === this.ball && bodyB === this.paddle2) || (bodyB === this.ball && bodyA === this.paddle2)) {
           this.checkBallPaddle2Collision();
@@ -302,16 +292,15 @@ export class GameInstance {
     // });
 
     setInterval(() => {
-      // this.velocity.x *= DAMPINGFACTOR;
-      // this.velocity.y *= DAMPINGFACTOR;
+      if (this.speed > INITALBALLSPEED) {
+        this.velocity.x *= DAMPINGFACTOR;
+        this.velocity.y *= DAMPINGFACTOR;
+      }
     }, 100);
 
   }
 
   private sendBallPosition() {
-    // Body.setVelocity(this.ball, this.velocity);
-    // console.log("velocity", this.ball.velocity)
-    // console.log("position", this.ball.velocity)
     const builder = new flatbuffers.Builder();
     const ballStateOffset = PositionState.createPositionState(builder, this.ball.position.x, this.ball.position.y);
     builder.finish(ballStateOffset);
@@ -326,49 +315,51 @@ export class GameInstance {
   private checkBallPaddle1Collision() {
     if (Math.abs(this.ball.position.x - this.paddle1.position.x) + 0.5 >= (BALLRADIUS + this.PADDLEWIDTHHALF)) {
       if (this.ball.position.y - this.paddle1.position.y < 0) {
-        console.log("touch right up", Date.now())
+        console.log("touch right up", Date.now(), this.ball.position.y - this.paddle1.position.y)
         this.velocity.x = Math.cos(this.degreesToRadians(this.ball.position.y - this.paddle1.position.y)) * this.speed;
         this.velocity.y = Math.sin(this.degreesToRadians(this.ball.position.y - this.paddle1.position.y)) * this.speed;
       }
       else {
-        console.log("touch right down", Date.now())
+        console.log("touch right down", Date.now(), this.ball.position.y / this.paddle1.position.y)
         this.velocity.x = Math.cos(this.degreesToRadians(this.ball.position.y - this.paddle1.position.y)) * this.speed;
         this.velocity.y = Math.sin(this.degreesToRadians(this.ball.position.y - this.paddle1.position.y)) * this.speed;
       }
     } else if (this.paddle1.position.y - this.ball.position.y + 0.5 >= +(BALLRADIUS + this.PADDLEHEIGHTHALF)) {
       console.log("touch up", Date.now())
-      this.velocity.x = Math.cos(this.degreesToRadians(-75)) * (this.speed * 5);
-      this.velocity.y = Math.sin(this.degreesToRadians(-75)) * (this.speed * 5);
+      this.velocity.x = Math.cos(this.degreesToRadians(-75)) * (this.speed * 1.5);
+      this.velocity.y = Math.sin(this.degreesToRadians(-75)) * (this.speed * 1.5);
     } else if (this.ball.position.y - this.paddle1.position.y - 0.5 <= +(BALLRADIUS + this.PADDLEHEIGHTHALF)) {
       console.log("touch down", Date.now())
-      this.velocity.x = Math.cos(this.degreesToRadians(+75)) * (this.speed * 5);
-      this.velocity.y = Math.sin(this.degreesToRadians(+75)) * (this.speed * 5);
+      this.velocity.x = Math.cos(this.degreesToRadians(+75)) * (this.speed * 1.5);
+      this.velocity.y = Math.sin(this.degreesToRadians(+75)) * (this.speed * 1.5);
     }
-    this.speed += 1;
+    if (this.speed < 15)
+      this.speed += 1;
   }
 
   private checkBallPaddle2Collision() {
     if (Math.abs(this.ball.position.x - this.paddle1.position.x) + 0.5 >= (BALLRADIUS + this.PADDLEWIDTHHALF)) {
       if (this.ball.position.y - this.paddle2.position.y < 0) {
-        console.log("touch right up", Date.now())
+        console.log("touch right up", Date.now(), this.ball.position.y / this.paddle2.position.y)
         this.velocity.x = -Math.cos(this.degreesToRadians(this.ball.position.y - this.paddle2.position.y)) * this.speed;
         this.velocity.y = Math.sin(this.degreesToRadians(this.ball.position.y - this.paddle2.position.y)) * this.speed;
       }
       else {
-        console.log("touch right down", Date.now())
+        console.log("touch right down", Date.now(), this.paddle2.position.y / this.ball.position.y)
         this.velocity.x = -Math.cos(this.degreesToRadians(this.ball.position.y - this.paddle2.position.y)) * this.speed;
         this.velocity.y = Math.sin(this.degreesToRadians(this.ball.position.y - this.paddle2.position.y)) * this.speed;
       }
     } else if (this.paddle2.position.y - this.ball.position.y + 0.5 >= +(BALLRADIUS + this.PADDLEHEIGHTHALF)) {
       console.log("touch up", Date.now())
-      this.velocity.x = -Math.cos(this.degreesToRadians(-75)) * (this.speed * 5);
-      this.velocity.y = Math.sin(this.degreesToRadians(-75)) * (this.speed * 5);
+      this.velocity.x = -Math.cos(this.degreesToRadians(-75)) * (this.speed * 1.5);
+      this.velocity.y = Math.sin(this.degreesToRadians(-75)) * (this.speed * 1.5);
     } else if (this.ball.position.y - this.paddle2.position.y - 0.5 <= +(BALLRADIUS + this.PADDLEHEIGHTHALF)) {
       console.log("touch down", Date.now())
-      this.velocity.x = -Math.cos(this.degreesToRadians(+75)) * (this.speed * 5);
-      this.velocity.y = Math.sin(this.degreesToRadians(+75)) * (this.speed * 5);
+      this.velocity.x = -Math.cos(this.degreesToRadians(+75)) * (this.speed * 1.5);
+      this.velocity.y = Math.sin(this.degreesToRadians(+75)) * (this.speed * 1.5);
     }
-    this.speed += 1;
+    if (this.speed < 15)
+      this.speed += 1;
   }
 
   private getNewStart(gameWidth, gameHeight) {
